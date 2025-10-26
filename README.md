@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Flowtusk MVP - AI Landing Page Generator
 
-## Getting Started
+Transform any website into high-converting, ICP-targeted landing pages using AI.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Website Analysis**: Extracts content from any URL using Jina AI
+- **ICP Generation**: Creates 3 unique Ideal Customer Profiles using GPT-4
+- **Landing Page Generation**: Produces tailored landing page copy for each ICP
+- **Beautiful UI**: Modern gradient design with Flowtusk branding
+- **Real-time Preview**: See generated landing pages instantly
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Quick Start
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. **Set up environment:**
+   ```bash
+   cp .env.local.example .env.local
+   ```
+   
+   **Required:** Add your OpenAI API key to `.env.local`:
+   ```
+   OPENAI_API_KEY=sk-...
+   ```
 
-## Learn More
+3. **Run dev server:**
+   ```bash
+   npm run dev
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+4. **Open [http://localhost:3000](http://localhost:3000)**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Optional: Supabase Setup (for publish & leads)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+2. Run the SQL in `supabase-schema.sql` in your Supabase SQL editor
+3. Add to `.env.local`:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your-project-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   ```
+4. The app works without Supabase (mock mode), but you won't be able to publish or track leads
 
-## Deploy on Vercel
+## Tech Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Framework**: Next.js 15
+- **AI**: OpenAI GPT-4, Jina AI Reader
+- **UI**: shadcn/ui, Tailwind CSS
+- **Components**: AI Elements
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Workflow
+
+1. User enters website URL
+2. System analyzes website content (Jina AI)
+3. AI generates 3 ICPs (OpenAI)
+4. User selects target ICP
+5. AI creates custom landing page copy
+6. User previews and can publish
+
+## Coming Soon
+
+- ✅ Website analysis & ICP generation
+- ✅ Landing page generation & preview
+- ⏳ Publish to unique URLs (Supabase)
+- ⏳ Lead form tracking & analytics
+- ⏳ Inline editing of landing page sections
+- ⏳ Export as HTML/React component
+
+## Brand Colors
+
+- Pink: `#FF6B9D`
+- Purple: `#A78BFA`
+- Blue: `#60A5FA`
+
+---
+
+Built with ❤️ using v0/AI Elements architecture
