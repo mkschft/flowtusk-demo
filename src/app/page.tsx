@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowUp, Plus, MessageSquare, Sparkles, Search, Brain, Wand2, Quote, CheckCircle2, Zap, Target, TrendingUp, ChevronDown, Check, Eye } from "lucide-react";
+import { Loader2, ArrowUp, Plus, MessageSquare, Sparkles, Search, Brain, Wand2, Quote, CheckCircle2, Zap, Target, TrendingUp, ChevronDown, Check, Eye, Users, Building, MapPin, Calendar, ExternalLink } from "lucide-react";
 import { LandingPageSection } from "@/components/LandingPageSection";
+import { LinkedInProfileDrawer } from "@/components/LinkedInProfileDrawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SystemMessage } from "@/components/ui/system-message";
 import { nanoid } from "nanoid";
@@ -21,6 +22,30 @@ type ICP = {
   personaName: string;
   personaRole: string;
   personaCompany: string;
+};
+
+type LinkedInPost = {
+  id: string;
+  content: string;
+  timestamp: string;
+  engagement: number;
+};
+
+type LinkedInProfile = {
+  id: string;
+  name: string;
+  headline: string;
+  company: string;
+  location: string;
+  photoUrl: string;
+  matchScore: number;
+  matchReasons: string[];
+  recentPosts: LinkedInPost[];
+  experience: {
+    title: string;
+    company: string;
+    duration: string;
+  }[];
 };
 
 type SectionFidelity = 'skeleton' | 'draft' | 'refined' | 'polished';
@@ -180,6 +205,10 @@ export default function ChatPage() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [selectedIcp, setSelectedIcp] = useState<ICP | null>(null);
   const [websiteMetadata, setWebsiteMetadata] = useState<{ heroImage?: string; brandColors?: { primary: string; secondary: string } }>({});
+  const [showProfilesDrawer, setShowProfilesDrawer] = useState(false);
+  const [selectedProfilesICP, setSelectedProfilesICP] = useState<ICP | null>(null);
+  const [linkedInProfiles, setLinkedInProfiles] = useState<LinkedInProfile[]>([]);
+  const [loadingProfiles, setLoadingProfiles] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
@@ -506,6 +535,176 @@ export default function ChatPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Mock LinkedIn profile generator
+  const generateMockProfiles = (icp: ICP): LinkedInProfile[] => {
+    const mockProfiles: LinkedInProfile[] = [
+      {
+        id: '1',
+        name: 'Sarah Chen',
+        headline: 'VP of Marketing at FastGrow | Growth Strategy & B2B SaaS',
+        company: 'FastGrow',
+        location: 'San Francisco, CA',
+        photoUrl: `https://api.dicebear.com/7.x/notionists/svg?seed=SarahChen`,
+        matchScore: 94,
+        matchReasons: [
+          'Matches target role and seniority',
+          'Active in B2B marketing communities',
+          'Recent posts about growth challenges'
+        ],
+        recentPosts: [
+          {
+            id: 'p1',
+            content: 'Struggling to scale our demand gen without increasing CAC. Any proven frameworks?',
+            timestamp: '2d ago',
+            engagement: 127
+          },
+          {
+            id: 'p2',
+            content: 'Just implemented account-based marketing. Results are promising but resource-intensive.',
+            timestamp: '1w ago',
+            engagement: 89
+          }
+        ],
+        experience: [
+          { title: 'VP Marketing', company: 'FastGrow', duration: '2y 3m' },
+          { title: 'Director of Growth', company: 'ScaleUp Inc', duration: '3y 1m' }
+        ]
+      },
+      {
+        id: '2',
+        name: 'Michael Rodriguez',
+        headline: 'Chief Revenue Officer | Scaling B2B SaaS to $50M ARR',
+        company: 'CloudSync',
+        location: 'Austin, TX',
+        photoUrl: `https://api.dicebear.com/7.x/notionists/svg?seed=MichaelRodriguez`,
+        matchScore: 91,
+        matchReasons: [
+          'Decision maker for revenue tools',
+          'Actively hiring growth team',
+          'Budget owner for marketing stack'
+        ],
+        recentPosts: [
+          {
+            id: 'p3',
+            content: 'Looking for recommendations on modern lead gen tools. What\'s actually working in 2024?',
+            timestamp: '3d ago',
+            engagement: 203
+          }
+        ],
+        experience: [
+          { title: 'Chief Revenue Officer', company: 'CloudSync', duration: '1y 8m' },
+          { title: 'VP Sales', company: 'DataStream', duration: '4y 2m' }
+        ]
+      },
+      {
+        id: '3',
+        name: 'Emily Watson',
+        headline: 'Head of Demand Generation | Building Scalable Growth Engines',
+        company: 'TechVision',
+        location: 'New York, NY',
+        photoUrl: `https://api.dicebear.com/7.x/notionists/svg?seed=EmilyWatson`,
+        matchScore: 89,
+        matchReasons: [
+          'Pain points align with solution',
+          'Company in growth phase (Series B)',
+          'Recent budget allocation for tools'
+        ],
+        recentPosts: [
+          {
+            id: 'p4',
+            content: 'Our pipeline is healthy but conversion rates dropped 15%. Time to revisit our ICP.',
+            timestamp: '5d ago',
+            engagement: 156
+          },
+          {
+            id: 'p5',
+            content: 'Personalization at scale is the holy grail. Who\'s cracked this?',
+            timestamp: '2w ago',
+            engagement: 94
+          }
+        ],
+        experience: [
+          { title: 'Head of Demand Gen', company: 'TechVision', duration: '2y 1m' },
+          { title: 'Senior Marketing Manager', company: 'InnovateCo', duration: '3y 6m' }
+        ]
+      },
+      {
+        id: '4',
+        name: 'David Park',
+        headline: 'Director of Marketing Operations | MarTech Stack Optimization',
+        company: 'Velocity Labs',
+        location: 'Seattle, WA',
+        photoUrl: `https://api.dicebear.com/7.x/notionists/svg?seed=DavidPark`,
+        matchScore: 87,
+        matchReasons: [
+          'Owns marketing technology decisions',
+          'Looking to consolidate tools',
+          'Budget cycle starts next quarter'
+        ],
+        recentPosts: [
+          {
+            id: 'p6',
+            content: 'Auditing our martech stack. 23 tools, but only using 40% of features. Time to streamline.',
+            timestamp: '1w ago',
+            engagement: 178
+          }
+        ],
+        experience: [
+          { title: 'Director Marketing Ops', company: 'Velocity Labs', duration: '1y 11m' },
+          { title: 'Marketing Operations Lead', company: 'GrowthCorp', duration: '2y 8m' }
+        ]
+      },
+      {
+        id: '5',
+        name: 'Jennifer Liu',
+        headline: 'Growth Marketing Lead | Performance Marketing & Analytics',
+        company: 'Momentum',
+        location: 'Boston, MA',
+        photoUrl: `https://api.dicebear.com/7.x/notionists/svg?seed=JenniferLiu`,
+        matchScore: 85,
+        matchReasons: [
+          'Data-driven decision maker',
+          'Experimenting with new channels',
+          'Team recently expanded'
+        ],
+        recentPosts: [
+          {
+            id: 'p7',
+            content: 'Attribution modeling is broken. We need better visibility into what actually drives conversions.',
+            timestamp: '4d ago',
+            engagement: 142
+          },
+          {
+            id: 'p8',
+            content: 'Hiring 2 growth marketers. DM if interested! Looking for people who love experiments.',
+            timestamp: '1w ago',
+            engagement: 67
+          }
+        ],
+        experience: [
+          { title: 'Growth Marketing Lead', company: 'Momentum', duration: '1y 5m' },
+          { title: 'Senior Growth Manager', company: 'StartupXYZ', duration: '2y 3m' }
+        ]
+      }
+    ];
+
+    return mockProfiles;
+  };
+
+  const handleShowProfiles = (e: React.MouseEvent, icp: ICP) => {
+    e.stopPropagation(); // Prevent ICP card click
+    setSelectedProfilesICP(icp);
+    setLoadingProfiles(true);
+    setShowProfilesDrawer(true);
+    
+    // Simulate loading delay
+    setTimeout(() => {
+      const profiles = generateMockProfiles(icp);
+      setLinkedInProfiles(profiles);
+      setLoadingProfiles(false);
+    }, 800);
   };
 
   const handleSelectIcp = async (icp: ICP) => {
@@ -932,6 +1131,24 @@ export default function ChatPage() {
                                   </div>
                                 </div>
 
+                                {/* LinkedIn Profiles CTA */}
+                                <div className="pt-2 border-t border-border/50 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-xs text-muted-foreground">
+                                      <span className="font-semibold text-foreground">12+ LinkedIn profiles</span> found
+                                    </p>
+                                  </div>
+                                  <Button 
+                                    size="sm"
+                                    variant="outline"
+                                    className={`w-full h-8 text-xs ${color.badge} border-2 ${color.border} hover:shadow-md transition-all`}
+                                    onClick={(e) => handleShowProfiles(e, icp)}
+                                  >
+                                    <Users className="h-3 w-3 mr-1.5" />
+                                    Show Profiles
+                                  </Button>
+                                </div>
+
                                 {/* Hover CTA */}
                                 <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <div className="w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-bold">
@@ -1256,6 +1473,15 @@ export default function ChatPage() {
           </form>
         </div>
       </div>
+
+      {/* LinkedIn Profiles Drawer */}
+      <LinkedInProfileDrawer
+        open={showProfilesDrawer}
+        onOpenChange={setShowProfilesDrawer}
+        icp={selectedProfilesICP}
+        profiles={linkedInProfiles}
+        loading={loadingProfiles}
+      />
     </div>
   );
 }
