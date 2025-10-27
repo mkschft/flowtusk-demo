@@ -18,9 +18,9 @@ import {
   Download, 
   Sparkles, 
   Check, 
-  Loader2,
   RefreshCw
 } from "lucide-react";
+import { SmartButton } from "@/app/page";
 
 type ValuePropVariable = {
   key: string;
@@ -46,6 +46,7 @@ type ValuePropBuilderProps = {
   onGenerateVariations: () => void;
   variations?: ValuePropVariation[];
   isGeneratingVariations?: boolean;
+  conversationId?: string;
 };
 
 export function ValuePropBuilder({
@@ -54,7 +55,8 @@ export function ValuePropBuilder({
   onVariableChange,
   onGenerateVariations,
   variations = [],
-  isGeneratingVariations = false
+  // isGeneratingVariations = false,
+  conversationId
 }: ValuePropBuilderProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showVariations, setShowVariations] = useState(false);
@@ -216,23 +218,16 @@ export function ValuePropBuilder({
 
             {/* Action Buttons */}
             <div className="flex gap-2 pt-2">
-              <Button
+              <SmartButton
+                action="generate-variations"
                 onClick={handleGenerateVariations}
-                disabled={isGeneratingVariations}
-                className="flex-1 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
+                conversationId={conversationId}
+                className="flex-1 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white"
+                loadingText="Generating variations..."
               >
-                {isGeneratingVariations ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Generate Variations
-                  </>
-                )}
-              </Button>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Generate Variations
+              </SmartButton>
               <Button
                 variant="outline"
                 onClick={() => handleCopy(buildPreview())}
@@ -318,7 +313,7 @@ export function ValuePropBuilder({
                 </div>
                 
                 <p className="text-sm leading-relaxed">
-                  "{variation.text}"
+                  &ldquo;{variation.text}&rdquo;
                 </p>
               </div>
             ))}

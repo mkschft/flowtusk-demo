@@ -69,7 +69,6 @@ flowtusk-v0/
 │   │   └── globals.css                       # Brand styles
 │   ├── components/
 │   │   ├── ui/                               # shadcn/ui
-│   │   └── ai-elements/                      # AI Elements
 │   └── lib/
 │       ├── utils.ts                          # Utilities
 │       └── supabase.ts                       # Supabase client

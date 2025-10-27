@@ -5,10 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowUp, Plus, MessageSquare, Sparkles, Search, Brain, Wand2, Quote, CheckCircle2, Zap, Target, TrendingUp, ChevronDown, Check, Eye, Users, Building, MapPin, Calendar, ExternalLink } from "lucide-react";
-import { LandingPageSection } from "@/components/LandingPageSection";
+import { Loader2, ArrowUp, Plus, MessageSquare, Sparkles, Search, Brain, Wand2, ChevronDown, Check, Users, MapPin, CheckCircle2 } from "lucide-react";
 import { LinkedInProfileDrawer } from "@/components/LinkedInProfileDrawer";
 import { ValuePropBuilderWrapper } from "@/components/ValuePropBuilderWrapper";
+import { ContentChoiceCard } from "@/components/ContentChoiceCard";
+import { FunnelSummaryCard } from "@/components/FunnelSummaryCard";
+import { FunnelChoiceCard } from "@/components/FunnelChoiceCard";
+import { EmailTypeChoice } from "@/components/EmailTypeChoice";
+import { SequenceLengthChoice } from "@/components/SequenceLengthChoice";
+import { OneTimeEmailCard } from "@/components/OneTimeEmailCard";
+import { LinkedInOutreachCard } from "@/components/LinkedInOutreachCard";
+import { EmailSequenceCard } from "@/components/EmailSequenceCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SystemMessage } from "@/components/ui/system-message";
 import { nanoid } from "nanoid";
@@ -51,40 +58,6 @@ type LinkedInProfile = {
   }[];
 };
 
-type SectionFidelity = 'skeleton' | 'draft' | 'refined' | 'polished';
-
-type LandingPageSection<T> = {
-  fidelity: SectionFidelity;
-  content: T;
-  updatedAt?: number;
-};
-
-type LandingPage = {
-  hero: LandingPageSection<{
-    headline: string;
-    subheadline: string;
-    cta: string;
-  }>;
-  testimonial: LandingPageSection<{
-    quote: string;
-    author: string;
-    role: string;
-    company: string;
-  }>;
-  features: LandingPageSection<{
-    items: Array<{ title: string; description: string }>;
-  }>;
-  problemSolution: LandingPageSection<{
-    problems: string[];
-    solution: string;
-  }>;
-  stats: LandingPageSection<{
-    items: Array<{ value: string; label: string }>;
-  }>;
-  heroImage?: string;
-  brandColors?: { primary: string; secondary: string };
-};
-
 type ThinkingStep = {
   id: string;
   label: string;
@@ -117,13 +90,95 @@ type ValuePropData = {
   icp: ICP;
 };
 
+type LinkedInMessage = {
+  id: string;
+  step: number;
+  type: 'connection' | 'follow-up-1' | 'follow-up-2';
+  title: string;
+  timing: string;
+  characterCount: number;
+  message: string;
+  personalizationTips: string[];
+  expectedResponse: string;
+};
+
+type LinkedInOutreachData = {
+  messages: LinkedInMessage[];
+  overallStrategy: string;
+  keyTakeaways: string[];
+};
+
+type EmailMessage = {
+  id: string;
+  step: number;
+  type: 'intro' | 'value' | 'social-proof' | 'urgency' | 'breakup';
+  dayNumber: number;
+  subjectLines: string[];
+  body: string;
+  cta: string;
+  openRateBenchmark: string;
+  replyRateBenchmark: string;
+  tips: string[];
+};
+
+type EmailSequenceData = {
+  emails: EmailMessage[];
+  sequenceGoal: string;
+  bestPractices: string[];
+  expectedOutcome: string;
+};
+
 type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  component?: "icps" | "landing-preview" | "value-prop";
-  data?: ICP[] | LandingPage | ValuePropData;
+  component?: "icps" | "value-prop" | "funnel-summary" | "funnel-choice" | "continue-to-funnel" | "email-type-choice" | "sequence-length-choice" | "one-time-email" | "linkedin-outreach" | "email-sequence";
+  data?: ICP[] | ValuePropData | { icp: ICP; valueProp?: string } | LinkedInOutreachData | EmailSequenceData | Record<string, unknown>;
   thinking?: ThinkingStep[];
+};
+
+// Enhanced Generation State Types
+type GenerationStep = 'analysis' | 'icp-selection' | 'value-prop' | 'funnel' | 'content-choice' | 'generation' | 'complete';
+
+type GeneratedContent = {
+  icps?: ICP[];
+  valueProp?: ValuePropData;
+  funnelSummary?: Record<string, unknown>;
+  emailSequence?: EmailSequenceData;
+  linkedinOutreach?: LinkedInOutreachData;
+};
+
+type GenerationState = {
+  currentStep: GenerationStep;
+  completedSteps: string[];
+  generatedContent: GeneratedContent;
+  isGenerating: boolean;
+  generationId?: string;
+  lastGenerationTime?: Date;
+};
+
+type UserJourney = {
+  websiteAnalyzed: boolean;
+  icpSelected: boolean;
+  valuePropGenerated: boolean;
+  contentChoiceMade: boolean;
+  finalContentGenerated: boolean;
+};
+
+type ConversationMemory = {
+  id: string;
+  websiteUrl: string;
+  selectedIcp: ICP | null;
+  generationHistory: Array<{
+    timestamp: Date;
+    action: string;
+    result: Record<string, unknown>;
+    success: boolean;
+  }>;
+  userPreferences: {
+    preferredContentType: string;
+    lastAction: string;
+  };
 };
 
 type Conversation = {
@@ -131,6 +186,302 @@ type Conversation = {
   title: string;
   messages: ChatMessage[];
   createdAt: Date;
+  // Enhanced state management
+  generationState: GenerationState;
+  userJourney: UserJourney;
+  memory: ConversationMemory;
+};
+
+// Generation Manager Class
+class GenerationManager {
+  private cache: Map<string, unknown> = new Map();
+  private pendingGenerations: Map<string, Promise<unknown>> = new Map();
+  private completedGenerations: Set<string> = new Set();
+
+  createKey(type: string, params: Record<string, unknown>): string {
+    return `${type}:${JSON.stringify(params)}`;
+  }
+
+  async generate<T>(
+    type: string,
+    params: Record<string, unknown>,
+    generator: () => Promise<T>
+  ): Promise<T> {
+    const key = this.createKey(type, params);
+
+    // Check cache first
+    if (this.cache.has(key)) {
+      console.log(`🎯 [GenerationManager] Cache hit for ${type}`);
+      return this.cache.get(key);
+    }
+
+    // Check if already generating
+    if (this.pendingGenerations.has(key)) {
+      console.log(`⏳ [GenerationManager] Waiting for existing generation: ${type}`);
+      return this.pendingGenerations.get(key);
+    }
+
+    // Check if already completed
+    if (this.completedGenerations.has(key)) {
+      console.log(`✅ [GenerationManager] Already completed: ${type}`);
+      return this.cache.get(key);
+    }
+
+    // Start generation
+    console.log(`🚀 [GenerationManager] Starting generation: ${type}`);
+    const promise = this.executeGeneration(key, generator);
+    this.pendingGenerations.set(key, promise);
+
+    try {
+      const result = await promise;
+      this.cache.set(key, result);
+      this.completedGenerations.add(key);
+      return result;
+    } finally {
+      this.pendingGenerations.delete(key);
+    }
+  }
+
+  private async executeGeneration<T>(key: string, generator: () => Promise<T>): Promise<T> {
+    try {
+      return await generator();
+    } catch (error) {
+      console.error(`❌ [GenerationManager] Generation failed for ${key}:`, error);
+      throw error;
+    }
+  }
+
+  isGenerating(type: string, params: Record<string, unknown>): boolean {
+    const key = this.createKey(type, params);
+    return this.pendingGenerations.has(key);
+  }
+
+  isCompleted(type: string, params: Record<string, unknown>): boolean {
+    const key = this.createKey(type, params);
+    return this.completedGenerations.has(key);
+  }
+
+  clearCache(): void {
+    this.cache.clear();
+    this.pendingGenerations.clear();
+    this.completedGenerations.clear();
+  }
+}
+
+// Enhanced Memory Manager Class with Persistence
+class MemoryManager {
+  private memories: Map<string, ConversationMemory> = new Map();
+  private readonly STORAGE_KEY = 'flowtusk_conversation_memories';
+
+  constructor() {
+    this.loadFromStorage();
+  }
+
+  private loadFromStorage(): void {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (stored) {
+        const data = JSON.parse(stored);
+        Object.entries(data).forEach(([id, memory]) => {
+          this.memories.set(id, memory as ConversationMemory);
+        });
+        console.log('📚 [MemoryManager] Loaded memories from storage');
+      }
+    } catch (error) {
+      console.error('❌ [MemoryManager] Failed to load memories:', error);
+    }
+  }
+
+  private saveToStorage(): void {
+    try {
+      const data = Object.fromEntries(this.memories);
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      console.log('💾 [MemoryManager] Saved memories to storage');
+    } catch (error) {
+      console.error('❌ [MemoryManager] Failed to save memories:', error);
+    }
+  }
+
+  getMemory(conversationId: string): ConversationMemory | null {
+    return this.memories.get(conversationId) || null;
+  }
+
+  updateMemory(conversationId: string, updates: Partial<ConversationMemory>): void {
+    const current = this.getMemory(conversationId);
+    const updated = { ...current, ...updates };
+    this.memories.set(conversationId, updated);
+    this.saveToStorage();
+  }
+
+  addGenerationRecord(conversationId: string, action: string, result: Record<string, unknown>, success: boolean = true): void {
+    const memory = this.getMemory(conversationId);
+    if (memory) {
+      memory.generationHistory.push({
+        timestamp: new Date(),
+        action,
+        result,
+        success
+      });
+      this.saveToStorage();
+    }
+  }
+
+  getLastAction(conversationId: string): string | null {
+    const memory = this.getMemory(conversationId);
+    return memory?.userPreferences.lastAction || null;
+  }
+
+  setLastAction(conversationId: string, action: string): void {
+    const memory = this.getMemory(conversationId);
+    if (memory) {
+      memory.userPreferences.lastAction = action;
+      this.saveToStorage();
+    }
+  }
+
+  getGenerationHistory(conversationId: string): Array<{
+    timestamp: Date;
+    action: string;
+    result: Record<string, unknown>;
+    success: boolean;
+  }> {
+    const memory = this.getMemory(conversationId);
+    return memory?.generationHistory || [];
+  }
+
+  getCompletedActions(conversationId: string): string[] {
+    const history = this.getGenerationHistory(conversationId);
+    return history
+      .filter(record => record.success)
+      .map(record => record.action);
+  }
+
+  canPerformAction(conversationId: string, action: string): boolean {
+    const completed = this.getCompletedActions(conversationId);
+    const memory = this.getMemory(conversationId);
+    
+    if (!memory) return false;
+
+    // Define action dependencies (using actual recorded action names)
+    const dependencies: Record<string, string[]> = {
+      'select-icp': [], // No prerequisite - ICPs can be selected when shown
+      'value-prop': ['select-icp'],
+      'funnel': ['value-prop'],
+      'make-content-choice': ['funnel'],
+      'email': ['make-content-choice'],
+      'linkedin': ['make-content-choice'],
+    };
+
+    const required = dependencies[action] || [];
+    return required.every(dep => completed.includes(dep));
+  }
+
+  clearMemory(conversationId: string): void {
+    this.memories.delete(conversationId);
+    this.saveToStorage();
+  }
+
+  exportMemory(conversationId: string): string {
+    const memory = this.getMemory(conversationId);
+    return JSON.stringify(memory, null, 2);
+  }
+}
+
+// Initialize managers
+const generationManager = new GenerationManager();
+const memoryManager = new MemoryManager();
+
+// Smart Button Component with State Management
+interface SmartButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  action: string;
+  onClick: () => void | Promise<void>;
+  children: React.ReactNode;
+  disabled?: boolean;
+  loadingText?: string;
+  conversationId?: string;
+}
+
+// Memory Status Indicator Component
+const MemoryStatusIndicator: React.FC<{ conversationId: string }> = ({ conversationId }) => {
+  const memory = memoryManager.getMemory(conversationId);
+  const completedActions = memoryManager.getCompletedActions(conversationId);
+  
+  if (!memory || completedActions.length === 0) return null;
+  
+  return (
+    <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 border rounded-lg p-3 shadow-lg max-w-xs">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+        <span className="text-sm font-medium">Memory Active</span>
+      </div>
+      <div className="text-xs text-gray-600 dark:text-gray-400">
+        <div>Completed: {completedActions.length} actions</div>
+        <div>Last: {memory.userPreferences.lastAction || 'None'}</div>
+      </div>
+    </div>
+  );
+};
+
+export const SmartButton: React.FC<SmartButtonProps> = ({ 
+  action, 
+  onClick, 
+  children, 
+  disabled: propDisabled,
+  loadingText = "Generating...",
+  conversationId,
+  ...props 
+}) => {
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const isActionDisabled = (action: string): boolean => {
+    if (!conversationId) return false;
+    
+    // Check if generation is in progress
+    if (generationManager.isGenerating(action, {})) {
+      return true;
+    }
+    
+    // Check if already completed (for certain actions)
+    if (['value-prop', 'email', 'linkedin', 'landing'].includes(action)) {
+      return generationManager.isCompleted(action, {});
+    }
+    
+    return false;
+  };
+
+  const handleClick = async () => {
+    if (isActionDisabled(action) || isLoading || propDisabled) return;
+    
+    setIsLoading(true);
+    
+    try {
+      await onClick();
+    } catch (error) {
+      console.error(`SmartButton error for ${action}:`, error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const isDisabled = propDisabled || isActionDisabled(action) || isLoading;
+  
+  return (
+    <button
+      {...props}
+      disabled={isDisabled}
+      onClick={handleClick}
+      className={`${props.className || ''} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    >
+      {isLoading ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          {loadingText}
+        </>
+      ) : (
+        children
+      )}
+    </button>
+  );
 };
 
 // Thinking Block Component
@@ -230,7 +581,6 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [selectedIcp, setSelectedIcp] = useState<ICP | null>(null);
-  const [websiteMetadata, setWebsiteMetadata] = useState<{ heroImage?: string; brandColors?: { primary: string; secondary: string } }>({});
   const [showProfilesDrawer, setShowProfilesDrawer] = useState(false);
   const [selectedProfilesICP, setSelectedProfilesICP] = useState<ICP | null>(null);
   const [linkedInProfiles, setLinkedInProfiles] = useState<LinkedInProfile[]>([]);
@@ -246,16 +596,45 @@ export default function ChatPage() {
   }, [activeConversation?.messages]);
 
   const createNewConversation = () => {
+    const newConvId = nanoid();
     const newConv: Conversation = {
-      id: nanoid(),
+      id: newConvId,
       title: "New conversation",
       messages: [],
       createdAt: new Date(),
+      generationState: {
+        currentStep: 'analysis',
+        completedSteps: [],
+        generatedContent: {},
+        isGenerating: false,
+        generationId: undefined,
+        lastGenerationTime: undefined,
+      },
+      userJourney: {
+        websiteAnalyzed: false,
+        icpSelected: false,
+        valuePropGenerated: false,
+        contentChoiceMade: false,
+        finalContentGenerated: false,
+      },
+      memory: {
+        id: newConvId,
+        websiteUrl: "",
+        selectedIcp: null,
+        generationHistory: [],
+        userPreferences: {
+          preferredContentType: "",
+          lastAction: "",
+        },
+      },
     };
     setConversations(prev => [newConv, ...prev]);
-    setActiveConversationId(newConv.id);
+    setActiveConversationId(newConvId);
     setSelectedIcp(null);
     setWebsiteUrl("");
+    
+    // Initialize memory manager
+    memoryManager.updateMemory(newConvId, newConv.memory);
   };
 
   const addMessage = (message: ChatMessage) => {
@@ -268,59 +647,83 @@ export default function ChatPage() {
     );
   };
 
-  const createSkeletonLandingPage = (): LandingPage => ({
-    hero: {
-      fidelity: 'skeleton',
-      content: { headline: '', subheadline: '', cta: '' },
-    },
-    testimonial: {
-      fidelity: 'skeleton',
-      content: { quote: '', author: '', role: '', company: '' },
-    },
-    features: {
-      fidelity: 'skeleton',
-      content: { items: [] },
-    },
-    problemSolution: {
-      fidelity: 'skeleton',
-      content: { problems: [], solution: '' },
-    },
-    stats: {
-      fidelity: 'skeleton',
-      content: { items: [] },
-    },
-  });
-
-  const updateLandingPageSection = (
-    messageId: string,
-    sectionKey: keyof LandingPage,
-    updates: Partial<LandingPageSection<any>>
-  ) => {
+  // Enhanced state management utilities
+  const updateGenerationState = (updates: Partial<GenerationState>) => {
     setConversations(prev =>
       prev.map(conv =>
         conv.id === activeConversationId
-          ? {
-              ...conv,
-              messages: conv.messages.map(m =>
-                m.id === messageId && m.component === 'landing-preview'
-                  ? {
-                      ...m,
-                      data: {
-                        ...(m.data as LandingPage),
-                        [sectionKey]: {
-                          ...(m.data as LandingPage)[sectionKey],
-                          ...updates,
-                          updatedAt: Date.now(),
-                        },
-                      },
-                    }
-                  : m
-              ),
+          ? { 
+              ...conv, 
+              generationState: { ...conv.generationState, ...updates },
+              lastGenerationTime: new Date()
             }
           : conv
       )
     );
   };
+
+  const updateUserJourney = (updates: Partial<UserJourney>) => {
+    setConversations(prev =>
+      prev.map(conv =>
+        conv.id === activeConversationId
+          ? { ...conv, userJourney: { ...conv.userJourney, ...updates } }
+          : conv
+      )
+    );
+  };
+
+  // const updateConversationMemory = (updates: Partial<ConversationMemory>) => {
+  //   setConversations(prev =>
+  //     prev.map(conv =>
+  //       conv.id === activeConversationId
+  //         ? { ...conv, memory: { ...conv.memory, ...updates } }
+  //         : conv
+  //     )
+  //   );
+  //   // Also update memory manager
+  //   memoryManager.updateMemory(activeConversationId, updates);
+  // };
+
+  const isGenerationInProgress = (type: string, params: Record<string, unknown> = {}): boolean => {
+    return generationManager.isGenerating(type, params);
+  };
+
+  const isGenerationCompleted = (type: string, params: Record<string, unknown> = {}): boolean => {
+    return generationManager.isCompleted(type, params);
+  };
+
+  const canPerformAction = (action: string): boolean => {
+    if (!activeConversation) return false;
+    
+    const { generationState } = activeConversation;
+    
+    // Check if generation is in progress
+    if (generationState.isGenerating) {
+      return false;
+    }
+    
+    // Use memory manager for dependency checking
+    const memoryCanPerform = memoryManager.canPerformAction(activeConversationId, action);
+    
+    // Additional checks for specific actions
+    switch (action) {
+      case 'select-icp':
+        return memoryCanPerform && !generationState.isGenerating;
+      case 'generate-value-prop':
+        return memoryCanPerform && !generationState.isGenerating;
+      case 'generate-funnel':
+        return memoryCanPerform && !generationState.isGenerating;
+      case 'make-content-choice':
+        return memoryCanPerform && !generationState.isGenerating;
+      case 'generate-email':
+        return memoryCanPerform && !generationState.isGenerating;
+      case 'generate-landing':
+        return memoryCanPerform && !generationState.isGenerating;
+      default:
+        return !generationState.isGenerating;
+    }
+  };
+
 
   const updateThinkingStep = (messageId: string, stepId: string, updates: Partial<ThinkingStep>) => {
     setConversations(prev =>
@@ -433,9 +836,7 @@ export default function ChatPage() {
         });
 
         // Store metadata
-        if (metadata?.heroImage) {
-          setWebsiteMetadata({ heroImage: metadata.heroImage });
-        }
+        // Note: metadata saved for future use
 
         updateThinkingStep(thinkingMsgId, 'extract', { 
           status: 'complete',
@@ -464,9 +865,7 @@ export default function ChatPage() {
         const { icps, brandColors, summary } = await icpRes.json();
         
         // Store brand colors
-        if (brandColors) {
-          setWebsiteMetadata(prev => ({ ...prev, brandColors }));
-        }
+        // Note: brandColors saved for future use
 
         updateThinkingStep(thinkingMsgId, 'generate', { 
           status: 'complete',
@@ -490,7 +889,7 @@ export default function ChatPage() {
 ${businessDesc}${targetMarket ? ` ${targetMarket}` : ''}
 
 **Key Pain Points & Impact:**
-${painPoints.slice(0, 3).map((p: any) => `• **${p.pain}** — ${p.metric}`).join('\n')}
+${painPoints.slice(0, 3).map((p: { pain: string; metric: string }) => `• **${p.pain}** — ${p.metric}`).join('\n')}
 
 **Growth Opportunity:** By targeting the right customer profile with personalized messaging, you have potential to reach up to **${multiplier}x more qualified leads** and significantly improve conversion rates.
 
@@ -511,6 +910,10 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
           component: "icps",
           data: icps,
         });
+
+        // Record website analysis completion
+        updateUserJourney({ websiteAnalyzed: true });
+        memoryManager.addGenerationRecord(activeConversationId, 'website-analyzed', { icps, summary } as Record<string, unknown>);
       } else if (selectedIcp && websiteUrl) {
         // Chat refinement
         const response = await fetch("/api/chat", {
@@ -521,7 +924,6 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
               role: m.role,
               content: m.content,
             })) || [],
-            landingPage: activeConversation?.messages.find(m => m.component === "landing-preview")?.data,
             websiteUrl,
             icp: selectedIcp,
           }),
@@ -579,7 +981,7 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
                 )
               );
             }
-          } catch (e) {
+          } catch {
             // Not JSON
           }
         }
@@ -613,7 +1015,7 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
   };
 
   // Mock LinkedIn profile generator
-  const generateMockProfiles = (icp: ICP): LinkedInProfile[] => {
+  const generateMockProfiles = (): LinkedInProfile[] => {
     const mockProfiles: LinkedInProfile[] = [
       {
         id: '1',
@@ -769,22 +1171,50 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
   };
 
   const handleShowProfiles = (e: React.MouseEvent, icp: ICP) => {
-    e.stopPropagation(); // Prevent ICP card click
+    e.stopPropagation(); // Prevent card click
     setSelectedProfilesICP(icp);
     setLoadingProfiles(true);
     setShowProfilesDrawer(true);
     
     // Simulate loading delay
     setTimeout(() => {
-      const profiles = generateMockProfiles(icp);
+      const profiles = generateMockProfiles();
       setLinkedInProfiles(profiles);
       setLoadingProfiles(false);
     }, 800);
   };
 
   const handleSelectIcp = async (icp: ICP) => {
+    // Check if action is allowed
+    if (!canPerformAction('select-icp')) {
+      console.log('🚫 [handleSelectIcp] Action not allowed - generation in progress or prerequisites not met');
+      return;
+    }
+
+    // Check if already completed for this ICP
+    if (isGenerationCompleted('value-prop', { icp: icp.id })) {
+      console.log('✅ [handleSelectIcp] Value prop already generated for this ICP');
+      setSelectedIcp(icp);
+      updateUserJourney({ icpSelected: true });
+      return;
+    }
+
+    // Check if currently generating
+    if (isGenerationInProgress('value-prop', { icp: icp.id })) {
+      console.log('⏳ [handleSelectIcp] Value prop generation already in progress');
+      return;
+    }
+
     setSelectedIcp(icp);
-    setIsLoading(true);
+    updateGenerationState({ 
+      isGenerating: true, 
+      generationId: `value-prop-${icp.id}`,
+      currentStep: 'value-prop'
+    });
+    updateUserJourney({ icpSelected: true });
+    
+    // Record ICP selection
+    memoryManager.addGenerationRecord(activeConversationId, 'select-icp', { icpId: icp.id, icpTitle: icp.title } as Record<string, unknown>);
 
     addMessage({
       id: nanoid(),
@@ -806,63 +1236,72 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
     });
 
     try {
-      // Step 1: Analyze
-      const analyzeStart = Date.now();
-      updateThinkingStep(thinkingMsgId, 'analyze', { 
-        status: 'running', 
-        startTime: analyzeStart,
-        substeps: ['Extracting pain points', 'Identifying goals']
-      });
+      // Use idempotent generation
+      const valuePropData = await generationManager.generate(
+        'value-prop',
+        { icp: icp.id, websiteUrl },
+        async () => {
+          // Step 1: Analyze
+          const analyzeStart = Date.now();
+          updateThinkingStep(thinkingMsgId, 'analyze', { 
+            status: 'running', 
+            startTime: analyzeStart,
+            substeps: ['Extracting pain points', 'Identifying goals']
+          });
 
-      await new Promise(resolve => setTimeout(resolve, 400));
+          await new Promise(resolve => setTimeout(resolve, 400));
 
-      updateThinkingStep(thinkingMsgId, 'analyze', { 
-        status: 'complete',
-        duration: Date.now() - analyzeStart,
-        substeps: [`${icp.painPoints.length} pain points identified`, `${icp.goals.length} goals mapped`]
-      });
+          updateThinkingStep(thinkingMsgId, 'analyze', { 
+            status: 'complete',
+            duration: Date.now() - analyzeStart,
+            substeps: [`${icp.painPoints.length} pain points identified`, `${icp.goals.length} goals mapped`]
+          });
 
-      // Step 2: Generate value prop
-      const generateStart = Date.now();
-      updateThinkingStep(thinkingMsgId, 'generate', { 
-        status: 'running',
-        startTime: generateStart,
-        substeps: ['Creating template with variables']
-      });
+          // Step 2: Generate value prop
+          const generateStart = Date.now();
+          updateThinkingStep(thinkingMsgId, 'generate', { 
+            status: 'running',
+            startTime: generateStart,
+            substeps: ['Creating template with variables']
+          });
 
-      const valuePropRes = await fetch("/api/generate-value-prop", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          icp,
-          websiteUrl
-        }),
-      });
+          const valuePropRes = await fetch("/api/generate-value-prop", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              icp,
+              websiteUrl
+            }),
+          });
 
-      if (!valuePropRes.ok) throw new Error("Failed to generate value prop");
-      const valuePropData = await valuePropRes.json();
+          if (!valuePropRes.ok) throw new Error("Failed to generate value prop");
+          const data = await valuePropRes.json();
 
-      updateThinkingStep(thinkingMsgId, 'generate', { 
-        status: 'complete',
-        duration: Date.now() - generateStart,
-        substeps: ['Template ready with 7 variables']
-      });
+          updateThinkingStep(thinkingMsgId, 'generate', { 
+            status: 'complete',
+            duration: Date.now() - generateStart,
+            substeps: ['Template ready with 7 variables']
+          });
 
-      // Step 3: Variations (already generated)
-      const variationsStart = Date.now();
-      updateThinkingStep(thinkingMsgId, 'variations', { 
-        status: 'running',
-        startTime: variationsStart,
-        substeps: ['Generating 5 style variations']
-      });
+          // Step 3: Variations (already generated)
+          const variationsStart = Date.now();
+          updateThinkingStep(thinkingMsgId, 'variations', { 
+            status: 'running',
+            startTime: variationsStart,
+            substeps: ['Generating 5 style variations']
+          });
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(resolve => setTimeout(resolve, 300));
 
-      updateThinkingStep(thinkingMsgId, 'variations', { 
-        status: 'complete',
-        duration: Date.now() - variationsStart,
-        substeps: ['5 variations ready']
-      });
+          updateThinkingStep(thinkingMsgId, 'variations', { 
+            status: 'complete',
+            duration: Date.now() - variationsStart,
+            substeps: ['5 variations ready']
+          });
+
+          return data;
+        }
+      );
 
       // Show value prop builder
       const valuePropMsgId = nanoid();
@@ -876,6 +1315,31 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
           icp
         },
       });
+
+      // Update state with generated content
+      updateGenerationState({
+        generatedContent: {
+          ...activeConversation?.generationState.generatedContent,
+          valueProp: valuePropData
+        },
+        completedSteps: [...(activeConversation?.generationState.completedSteps || []), 'value-prop']
+      });
+      updateUserJourney({ valuePropGenerated: true });
+
+      // Record in memory
+      memoryManager.addGenerationRecord(activeConversationId, 'value-prop', valuePropData);
+      memoryManager.setLastAction(activeConversationId, 'select-icp');
+
+      // Ask user if they want to continue
+      await new Promise(resolve => setTimeout(resolve, 500));
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "🎉 Great! Your value proposition is ready. Would you like to create an outreach strategy to connect with this audience?",
+        component: "continue-to-funnel",
+        data: { icp },
+      });
+
     } catch (error) {
       console.error("Error:", error);
       addMessage({
@@ -883,195 +1347,360 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
         role: "assistant",
         content: "Sorry, something went wrong generating the value proposition. Please try again.",
       });
+      memoryManager.addGenerationRecord(activeConversationId, 'value-prop', null, false);
     } finally {
-      setIsLoading(false);
+      updateGenerationState({ 
+        isGenerating: false, 
+        generationId: undefined 
+      });
     }
   };
 
-  const handleGenerateLandingPage = async (icp: ICP) => {
-    setIsLoading(true);
+  const handleGenerateFunnel = async (icp: ICP) => {
+    console.log('🚀 [handleGenerateFunnel] Starting funnel generation for ICP:', icp.id);
+    
+    // Show funnel summary
+    addMessage({
+      id: nanoid(),
+      role: "assistant",
+      content: `Perfect! Here's your complete outreach strategy for **${icp.title}**:`,
+      component: "funnel-summary",
+      data: { 
+        icp,
+        valueProp: activeConversation?.generationState.generatedContent.valueProp?.variations?.[0]?.text || "Your value proposition",
+        strategy: `This strategy works because ${icp.personaRole}s typically respond well to personalized email outreach that addresses their specific pain points.`,
+        benchmarks: "25-35% open rate, 5-8% conversion rate, 15-25% lead capture rate"
+      },
+    });
+
+    // Show funnel choices after summary
+    await new Promise(resolve => setTimeout(resolve, 300));
+    addMessage({
+      id: nanoid(),
+      role: "assistant",
+      content: "",
+      component: "funnel-choice",
+      data: { icp },
+    });
+
+    // Record funnel generation in memory
+    memoryManager.addGenerationRecord(activeConversationId, 'funnel', { 
+      icp, 
+      valueProp: activeConversation?.generationState.generatedContent.valueProp 
+    } as Record<string, unknown>);
+  };
+
+  const handleContentChoice = async (
+    choice: 'linkedin' | 'email' | 'landing' | 'lead-magnet',
+    icp: ICP
+  ) => {
+    // Check if action is allowed
+    if (!canPerformAction('make-content-choice')) {
+      console.log('🚫 [handleContentChoice] Action not allowed - generation in progress or prerequisites not met');
+      return;
+    }
+
+    if (choice === 'lead-magnet') {
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "🎨 Lead Magnet Generator is coming soon! This will help you create downloadable resources like checklists, templates, and guides to capture emails.",
+      });
+      return;
+    }
+
+    // Check if already completed for this choice and ICP
+    if (isGenerationCompleted(choice, { icp: icp.id })) {
+      console.log(`✅ [handleContentChoice] ${choice} already generated for this ICP`);
+      updateUserJourney({ contentChoiceMade: true });
+      return;
+    }
+
+    // Check if currently generating
+    if (isGenerationInProgress(choice, { icp: icp.id })) {
+      console.log(`⏳ [handleContentChoice] ${choice} generation already in progress`);
+      return;
+    }
+
+    updateGenerationState({ 
+      isGenerating: true, 
+      generationId: `${choice}-${icp.id}`,
+      currentStep: 'generation'
+    });
+    updateUserJourney({ contentChoiceMade: true });
+
+    const choiceTitles = {
+      linkedin: 'LinkedIn Outreach Sequence',
+      email: 'Email Nurture Sequence',
+      landing: 'Landing Page',
+      'lead-magnet': 'Lead Magnet'
+    };
 
     addMessage({
       id: nanoid(),
       role: "user",
-      content: `Generate landing page for: ${icp.title}`,
+      content: `Generate ${choiceTitles[choice]} for: ${icp.title}`,
     });
 
     // Create thinking message
     const thinkingMsgId = nanoid();
+    const thinkingSteps = choice === 'linkedin' 
+      ? [
+          { id: 'analyze', label: 'Analyzing LinkedIn best practices', status: 'pending' as const },
+          { id: 'connection', label: 'Crafting connection request', status: 'pending' as const },
+          { id: 'followups', label: 'Creating follow-up messages', status: 'pending' as const },
+        ]
+      : [
+          { id: 'analyze', label: 'Analyzing email sequence strategy', status: 'pending' as const },
+          { id: 'subjects', label: 'Generating subject line variations', status: 'pending' as const },
+          { id: 'emails', label: 'Writing email sequence', status: 'pending' as const },
+        ];
+
     addMessage({
       id: thinkingMsgId,
       role: "assistant",
       content: "thinking",
-      thinking: [
-        { id: 'skeleton', label: 'Building page structure', status: 'pending' },
-        { id: 'hero', label: 'Crafting hero section', status: 'pending' },
-        { id: 'testimonial', label: 'Writing testimonial', status: 'pending' },
-        { id: 'features', label: 'Defining features', status: 'pending' },
-        { id: 'problem-solution', label: 'Articulating value', status: 'pending' },
-        { id: 'stats', label: 'Adding social proof', status: 'pending' },
-      ],
+      thinking: thinkingSteps,
     });
 
     try {
-      // Phase 1: Show skeleton immediately
-      const skeletonStart = Date.now();
-      updateThinkingStep(thinkingMsgId, 'skeleton', {
-        status: 'running',
-        startTime: skeletonStart,
-        substeps: ['Creating wireframe layout']
-      });
+      // Use idempotent generation
+      const data = await generationManager.generate(
+        choice,
+        { icp: icp.id, websiteUrl },
+        async () => {
+          const apiRoute = choice === 'linkedin' 
+            ? '/api/generate-linkedin-outreach'
+            : '/api/generate-email-sequence';
 
-      const landingPageId = nanoid();
-      const skeletonPage = createSkeletonLandingPage();
-      skeletonPage.heroImage = websiteMetadata.heroImage;
-      skeletonPage.brandColors = websiteMetadata.brandColors;
+          // Step 1: Analyze
+          const analyzeStart = Date.now();
+          updateThinkingStep(thinkingMsgId, 'analyze', { 
+            status: 'running',
+            startTime: analyzeStart,
+          });
 
-      addMessage({
-        id: landingPageId,
-        role: "assistant",
-        content: "Building your landing page...",
-        component: "landing-preview",
-        data: skeletonPage,
-      });
+          await new Promise(resolve => setTimeout(resolve, 400));
 
-      await new Promise(resolve => setTimeout(resolve, 400));
+          updateThinkingStep(thinkingMsgId, 'analyze', { 
+            status: 'complete',
+            duration: Date.now() - analyzeStart,
+          });
 
-      updateThinkingStep(thinkingMsgId, 'skeleton', {
-        status: 'complete',
-        duration: Date.now() - skeletonStart,
-        substeps: ['Wireframe ready']
-      });
+          // Step 2
+          const step2Start = Date.now();
+          const step2Id = choice === 'linkedin' ? 'connection' : 'subjects';
+          updateThinkingStep(thinkingMsgId, step2Id, { 
+            status: 'running',
+            startTime: step2Start,
+          });
 
-      // Phase 2-6: Two-phase progressive generation
-      const sections = [
-        { key: 'hero', label: 'hero', thinkingId: 'hero' },
-        { key: 'testimonial', label: 'testimonial', thinkingId: 'testimonial' },
-        { key: 'features', label: 'features', thinkingId: 'features' },
-        { key: 'problemSolution', label: 'problem-solution', thinkingId: 'problem-solution' },
-        { key: 'stats', label: 'stats', thinkingId: 'stats' },
-      ];
+          const response = await fetch(apiRoute, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              icp,
+              websiteUrl
+            }),
+          });
 
-      // PHASE 1: Generate all titles/headlines first
-      console.log('🎯 [Client] Phase 1: Generating all titles...');
-      for (const section of sections) {
-        const sectionStart = Date.now();
-        updateThinkingStep(thinkingMsgId, section.thinkingId, {
-          status: 'running',
-          startTime: sectionStart,
-          substeps: ['Generating title...']
-        });
+          if (!response.ok) throw new Error(`Failed to generate ${choice} content`);
+          const result = await response.json();
 
-        // Call API in "title" mode
-        const res = await fetch("/api/generate-landing-page", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            icp, 
-            websiteUrl,
-            heroImage: websiteMetadata.heroImage,
-            brandColors: websiteMetadata.brandColors,
-            section: section.key,
-            mode: 'title', // Generate titles only
-          }),
-        });
+          updateThinkingStep(thinkingMsgId, step2Id, { 
+            status: 'complete',
+            duration: Date.now() - step2Start,
+          });
 
-        if (!res.ok) throw new Error(`Failed to generate ${section.label} title`);
-        const { sectionData } = await res.json();
-
-        // Update with draft fidelity (titles only)
-        updateLandingPageSection(landingPageId, section.key as keyof LandingPage, {
-          fidelity: 'draft',
-          content: sectionData,
-        });
-
-        updateThinkingStep(thinkingMsgId, section.thinkingId, {
-          status: 'complete',
-          duration: Date.now() - sectionStart,
-          substeps: ['Title added']
-        });
-
-        // Small delay for UX
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      console.log('✅ [Client] Phase 1 complete: All titles generated');
-
-      // PHASE 2: Fill in details for each section
-      console.log('🎯 [Client] Phase 2: Filling in details...');
-      for (const section of sections) {
-        const sectionStart = Date.now();
-        updateThinkingStep(thinkingMsgId, section.thinkingId, {
-          status: 'running',
-          startTime: sectionStart,
-          substeps: ['Adding details...']
-        });
-
-        // Call API in "full" mode
-        const res = await fetch("/api/generate-landing-page", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            icp, 
-            websiteUrl,
-            heroImage: websiteMetadata.heroImage,
-            brandColors: websiteMetadata.brandColors,
-            section: section.key,
-            mode: 'full', // Generate complete content
-          }),
-        });
-
-        if (!res.ok) throw new Error(`Failed to generate ${section.label} details`);
-        const { sectionData } = await res.json();
-
-        // Update with refined fidelity (full content)
-        updateLandingPageSection(landingPageId, section.key as keyof LandingPage, {
-          fidelity: 'refined',
-          content: sectionData,
-        });
-
-        updateThinkingStep(thinkingMsgId, section.thinkingId, {
-          status: 'complete',
-          duration: Date.now() - sectionStart,
-          substeps: ['Title added', 'Details added']
-        });
-
-        // Small delay for UX
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      console.log('✅ [Client] Phase 2 complete: All details filled');
-
-      // Update final message
-      setConversations(prev =>
-        prev.map(conv =>
-          conv.id === activeConversationId
-            ? {
-                ...conv,
-                messages: conv.messages.map(m =>
-                  m.id === landingPageId
-                    ? {
-                        ...m,
-                        content: `Here's your landing page for ${icp.title}. Ask me to "polish" or "refine" any section!`,
-                      }
-                    : m
-                ),
-              }
-            : conv
-        )
+          return result;
+        }
       );
+
+      // Step 3
+      const step3Start = Date.now();
+      const step3Id = choice === 'linkedin' ? 'followups' : 'emails';
+      updateThinkingStep(thinkingMsgId, step3Id, { 
+        status: 'running',
+        startTime: step3Start,
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      updateThinkingStep(thinkingMsgId, step3Id, { 
+        status: 'complete',
+        duration: Date.now() - step3Start,
+      });
+
+      // Show results
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: `Here's your ${choiceTitles[choice]} for **${icp.title}**. All messages are ready to copy and customize!`,
+        component: choice === 'linkedin' ? 'linkedin-outreach' : 'email-sequence',
+        data: { ...data, personaTitle: icp.title },
+      });
+
+      // Update state with generated content
+      updateGenerationState({
+        generatedContent: {
+          ...activeConversation?.generationState.generatedContent,
+          [choice === 'linkedin' ? 'linkedinOutreach' : 'emailSequence']: data
+        },
+        completedSteps: [...(activeConversation?.generationState.completedSteps || []), choice]
+      });
+      updateUserJourney({ finalContentGenerated: true });
+
+      // Show content choice again
+      await new Promise(resolve => setTimeout(resolve, 500));
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: `Want to create more content for **${icp.title}**?`,
+        component: "content-choice",
+        data: { icp },
+      });
+
+      // Record in memory
+      memoryManager.addGenerationRecord(activeConversationId, choice, data);
+      memoryManager.setLastAction(activeConversationId, 'content-choice');
+
     } catch (error) {
       console.error("Error:", error);
       addMessage({
         id: nanoid(),
         role: "assistant",
-        content: "Sorry, something went wrong generating the landing page. Please try again.",
+        content: `Sorry, something went wrong generating the ${choiceTitles[choice]}. Please try again.`,
+      });
+      memoryManager.addGenerationRecord(activeConversationId, choice, null, false);
+    } finally {
+      updateGenerationState({ 
+        isGenerating: false, 
+        generationId: undefined 
+      });
+    }
+  };
+
+  // New simplified flow handlers
+  const handleFunnelChoice = async (choice: 'email' | 'landing', icp: ICP) => {
+    if (choice === 'landing') {
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "",
+        component: "landing-page-choice",
+        data: { icp },
+      });
+    } else if (choice === 'email') {
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "",
+        component: "email-type-choice",
+        data: { icp },
+      });
+    }
+  };
+
+  const handleEmailTypeChoice = async (type: 'one-time' | 'sequence', icp: ICP) => {
+    if (type === 'one-time') {
+      // Generate one-time email directly
+      setIsLoading(true);
+      addMessage({
+        id: nanoid(),
+        role: "user",
+        content: `Generate one-time email for: ${icp.title}`,
+      });
+
+      try {
+        const response = await fetch("/api/generate-one-time-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ icp, websiteContext: websiteUrl }),
+        });
+
+        if (!response.ok) throw new Error("Failed to generate one-time email");
+        const data = await response.json();
+
+        addMessage({
+          id: nanoid(),
+          role: "assistant",
+          content: `Here's your **One-Time Email** for **${icp.title}**:`,
+          component: "one-time-email",
+          data: { ...data, personaTitle: icp.title },
+        });
+      } catch (error) {
+        console.error("Error:", error);
+        addMessage({
+          id: nanoid(),
+          role: "assistant",
+          content: "Sorry, something went wrong generating the email. Please try again.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    } else if (type === 'sequence') {
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "",
+        component: "sequence-length-choice",
+        data: { icp },
+      });
+    }
+  };
+
+  const handleSequenceLengthChoice = async (days: 5 | 7 | 10, icp: ICP) => {
+    setIsLoading(true);
+    addMessage({
+      id: nanoid(),
+      role: "user",
+      content: `Generate ${days}-day email sequence for: ${icp.title}`,
+    });
+
+    try {
+      const response = await fetch("/api/generate-email-sequence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ icp, websiteUrl, sequenceLength: days }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate email sequence");
+      const data = await response.json();
+
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: `Here's your **${days}-Day Email Sequence** for **${icp.title}**:`,
+        component: "email-sequence",
+        data: { ...data, personaTitle: icp.title },
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "Sorry, something went wrong generating the sequence. Please try again.",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleFunnelSummaryRegenerate = async (icp: ICP) => {
+    // Regenerate funnel summary with same data
+    addMessage({
+      id: nanoid(),
+      role: "assistant",
+      content: `Here's your updated marketing funnel strategy for **${icp.title}**:`,
+      component: "funnel-summary",
+      data: { 
+        icp,
+        valueProp: "Your value proposition",
+        strategy: `This funnel works because ${icp.personaRole}s typically respond well to personalized email outreach followed by targeted landing pages that address their specific pain points.`,
+        benchmarks: "25-35% open rate, 5-8% conversion rate, 15-25% lead capture rate"
+      },
+    });
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -1361,269 +1990,119 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
                       <ValuePropBuilderWrapper
                         valuePropData={message.data as ValuePropData}
                         websiteUrl={websiteUrl}
-                        onGenerateLandingPage={handleGenerateLandingPage}
+                        conversationId={activeConversationId}
                       />
                     )}
 
-                    {/* Landing Page Preview Card */}
-                    {message.component === "landing-preview" && message.data && (() => {
-                      const landing = message.data as LandingPage;
-                      
+                    {/* Content Choice Card */}
+                    {message.component === "content-choice" && message.data && (() => {
+                      const { icp } = message.data as { icp: ICP };
                       return (
-                        <Card className="overflow-hidden border-2 shadow-lg">
-                          {/* Preview Header */}
-                          <div className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 border-b px-4 py-3 flex items-center justify-between">
-                            <div>
-                              <h3 className="font-semibold text-sm flex items-center gap-2">
-                                <Sparkles className="h-4 w-4" />
-                                Landing Page Preview
-                              </h3>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                Progressive generation • Sections will fill in
+                        <ContentChoiceCard
+                          onSelect={(choice) => handleContentChoice(choice, icp)}
+                        />
+                      );
+                    })()}
+
+                    {/* Funnel Summary Card */}
+                    {message.component === "funnel-summary" && message.data && (() => {
+                      const data = message.data as { icp: ICP; valueProp?: string; strategy?: string; benchmarks?: string };
+                      return (
+                        <FunnelSummaryCard
+                          data={data}
+                          onRegenerate={() => handleFunnelSummaryRegenerate(data.icp)}
+                        />
+                      );
+                    })()}
+
+                    {/* Funnel Choice Card */}
+                    {/* Continue to Funnel Prompt */}
+                    {message.component === "continue-to-funnel" && message.data && (() => {
+                      const { icp } = message.data as { icp: ICP };
+                      return (
+                        <Card className="p-6 border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1">
+                              <p className="text-sm text-muted-foreground">
+                                Ready to create personalized outreach content for your target audience?
                               </p>
                             </div>
-                            <div className="flex gap-2">
-                              <Button size="sm" className="h-8 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700">
-                                Publish
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Content with max height and scroll */}
-                          <div className="bg-muted/20 max-h-[700px] overflow-y-auto">
-                            <div className="space-y-6 max-w-4xl mx-auto p-6">
-                              {/* Hero Section */}
-                              <LandingPageSection fidelity={landing.hero.fidelity} type="hero">
-                                {landing.hero.fidelity === 'skeleton' ? (
-                                  <div className="h-80 flex items-center justify-center p-8">
-                                    <div className="space-y-4 max-w-2xl w-full text-center">
-                                      <div className="h-12 bg-muted/60 animate-pulse rounded mx-auto w-3/4" />
-                                      <div className="h-6 bg-muted/40 animate-pulse rounded mx-auto w-2/3" />
-                                      <div className="h-12 w-40 bg-muted/60 animate-pulse rounded mx-auto mt-6" />
-                                    </div>
-                                  </div>
-                                ) : landing.heroImage ? (
-                                  <div className="relative h-80 overflow-hidden">
-                                    <img 
-                                      src={landing.heroImage} 
-                                      alt="Hero" 
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
-                                    <div className="absolute inset-0 flex items-center justify-center p-8">
-                                      <div className="text-center space-y-4 max-w-2xl">
-                                        <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-lg">
-                                          {landing.hero.content.headline}
-                                        </h1>
-                                        {landing.hero.content.subheadline ? (
-                                          <p className="text-lg text-white/90 drop-shadow-md">
-                                            {landing.hero.content.subheadline}
-                                          </p>
-                                        ) : (
-                                          <div className="h-6 bg-white/20 animate-pulse rounded w-2/3 mx-auto" />
-                                        )}
-                                        {landing.hero.content.cta ? (
-                                          <Button size="lg" className="bg-white text-black hover:bg-white/90 shadow-xl">
-                                            {landing.hero.content.cta}
-                                          </Button>
-                                        ) : (
-                                          <div className="h-12 w-40 bg-white/20 animate-pulse rounded mx-auto" />
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="p-8 bg-gradient-to-br from-pink-50/50 via-purple-50/50 to-blue-50/50 dark:from-pink-950/20 dark:via-purple-950/20 dark:to-blue-950/20">
-                                    <div className="text-center space-y-4 max-w-2xl mx-auto">
-                                      <h1 className="text-4xl font-bold tracking-tight">
-                                        {landing.hero.content.headline}
-                                      </h1>
-                                      {landing.hero.content.subheadline ? (
-                                        <p className="text-lg text-muted-foreground">
-                                          {landing.hero.content.subheadline}
-                                        </p>
-                                      ) : (
-                                        <div className="h-6 bg-muted/40 animate-pulse rounded w-2/3 mx-auto" />
-                                      )}
-                                      {landing.hero.content.cta ? (
-                                        <Button size="lg" className="bg-gradient-to-r from-pink-600 to-purple-600">
-                                          {landing.hero.content.cta}
-                                        </Button>
-                                      ) : (
-                                        <div className="h-12 w-40 bg-muted/40 animate-pulse rounded mx-auto" />
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </LandingPageSection>
-
-                              {/* Testimonial Section */}
-                              <LandingPageSection fidelity={landing.testimonial.fidelity} type="testimonial" className="p-6">
-                                {landing.testimonial.fidelity === 'skeleton' ? (
-                                  <div className="flex gap-4">
-                                    <div className="w-8 h-8 bg-muted/40 animate-pulse rounded shrink-0" />
-                                    <div className="flex-1 space-y-3">
-                                      <div className="space-y-2">
-                                        <div className="h-4 bg-muted/40 animate-pulse rounded w-full" />
-                                        <div className="h-4 bg-muted/40 animate-pulse rounded w-5/6" />
-                                      </div>
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-muted/50 animate-pulse" />
-                                        <div className="space-y-2 flex-1">
-                                          <div className="h-3 bg-muted/40 animate-pulse rounded w-32" />
-                                          <div className="h-3 bg-muted/30 animate-pulse rounded w-40" />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="flex gap-4">
-                                    <Quote className="h-8 w-8 text-muted-foreground/30 shrink-0" />
-                                    <div className="space-y-3">
-                                      <p className="text-sm italic text-muted-foreground leading-relaxed">
-                                        "{landing.testimonial.content.quote}"
-                                      </p>
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center text-white font-bold text-sm">
-                                          {landing.testimonial.content.author.charAt(0)}
-                                        </div>
-                                        <div>
-                                          <div className="font-semibold text-sm">{landing.testimonial.content.author}</div>
-                                          <div className="text-xs text-muted-foreground">
-                                            {landing.testimonial.content.role} at {landing.testimonial.content.company}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              </LandingPageSection>
-
-                              {/* Features Section */}
-                              <div className="grid md:grid-cols-3 gap-4">
-                                {landing.features.fidelity === 'skeleton' ? (
-                                  [1, 2, 3].map((i) => (
-                                    <LandingPageSection key={i} fidelity="skeleton" type="features" className="p-5">
-                                      <div className="w-10 h-10 rounded-lg bg-muted/50 animate-pulse mb-3" />
-                                      <div className="h-4 bg-muted/40 animate-pulse rounded mb-2 w-3/4" />
-                                      <div className="space-y-2">
-                                        <div className="h-3 bg-muted/30 animate-pulse rounded" />
-                                        <div className="h-3 bg-muted/30 animate-pulse rounded w-5/6" />
-                                      </div>
-                                    </LandingPageSection>
-                                  ))
-                                ) : (
-                                  landing.features.content.items.map((feature, idx) => {
-                                    const icons = [CheckCircle2, Zap, Target];
-                                    const Icon = icons[idx % icons.length];
-                                    const colors = [
-                                      "text-pink-600 bg-pink-100 dark:bg-pink-950",
-                                      "text-purple-600 bg-purple-100 dark:bg-purple-950",
-                                      "text-blue-600 bg-blue-100 dark:bg-blue-950"
-                                    ];
-                                    return (
-                                      <LandingPageSection key={idx} fidelity={landing.features.fidelity} type="features" className="p-5 hover:shadow-lg transition-shadow">
-                                        <div className={`w-10 h-10 rounded-lg ${colors[idx % colors.length]} flex items-center justify-center mb-3`}>
-                                          <Icon className="h-5 w-5" />
-                                        </div>
-                                        <h3 className="font-semibold mb-2 text-sm">{feature.title}</h3>
-                                        {feature.description ? (
-                                          <p className="text-xs text-muted-foreground leading-relaxed">
-                                            {feature.description}
-                                          </p>
-                                        ) : (
-                                          <div className="space-y-2">
-                                            <div className="h-3 bg-muted/30 animate-pulse rounded" />
-                                            <div className="h-3 bg-muted/30 animate-pulse rounded w-5/6" />
-                                          </div>
-                                        )}
-                                      </LandingPageSection>
-                                    );
-                                  })
-                                )}
-                              </div>
-
-                              {/* Problem-Solution Section */}
-                              <LandingPageSection fidelity={landing.problemSolution.fidelity} type="problemSolution" className="p-6 bg-muted/30">
-                                {landing.problemSolution.fidelity === 'skeleton' ? (
-                                  <div className="grid md:grid-cols-2 gap-6">
-                                    <div>
-                                      <div className="h-4 bg-muted/40 animate-pulse rounded w-32 mb-3" />
-                                      <div className="space-y-2">
-                                        {[1, 2, 3].map((i) => (
-                                          <div key={i} className="flex items-start gap-2">
-                                            <div className="w-4 h-4 bg-muted/30 animate-pulse rounded shrink-0 mt-0.5" />
-                                            <div className="h-3 bg-muted/30 animate-pulse rounded flex-1" />
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <div className="h-4 bg-muted/40 animate-pulse rounded w-32 mb-3" />
-                                      <div className="space-y-2">
-                                        <div className="h-3 bg-muted/30 animate-pulse rounded" />
-                                        <div className="h-3 bg-muted/30 animate-pulse rounded" />
-                                        <div className="h-3 bg-muted/30 animate-pulse rounded w-4/5" />
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="grid md:grid-cols-2 gap-6">
-                                    <div>
-                                      <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
-                                        <span className="text-red-500">✗</span> Common Challenges
-                                      </h3>
-                                      <div className="space-y-2">
-                                        {landing.problemSolution.content.problems.map((problem, idx) => (
-                                          <div key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
-                                            <span className="text-red-500 mt-0.5">•</span>
-                                            <span>{problem}</span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
-                                        <span className="text-green-500">✓</span> Our Solution
-                                      </h3>
-                                      <p className="text-xs text-muted-foreground leading-relaxed">
-                                        {landing.problemSolution.content.solution}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-                              </LandingPageSection>
-
-                              {/* Stats Section */}
-                              <LandingPageSection fidelity={landing.stats.fidelity} type="stats" className="p-6">
-                                {landing.stats.fidelity === 'skeleton' ? (
-                                  <div className="grid grid-cols-3 gap-6 text-center">
-                                    {[1, 2, 3].map((i) => (
-                                      <div key={i}>
-                                        <div className="h-8 bg-muted/50 animate-pulse rounded w-20 mx-auto mb-2" />
-                                        <div className="h-3 bg-muted/30 animate-pulse rounded w-24 mx-auto" />
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-3 gap-6 text-center">
-                                    {landing.stats.content.items.map((stat, idx) => (
-                                      <div key={idx}>
-                                        <div className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-1">
-                                          {stat.value}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">{stat.label}</div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </LandingPageSection>
-                            </div>
+                            <Button
+                              onClick={() => handleGenerateFunnel(icp)}
+                              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-lg"
+                            >
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Create Outreach Strategy
+                            </Button>
                           </div>
                         </Card>
                       );
                     })()}
+
+                    {message.component === "funnel-choice" && message.data && (() => {
+                      const { icp } = message.data as { icp: ICP };
+                      return (
+                        <FunnelChoiceCard
+                          onSelect={(choice) => handleFunnelChoice(choice, icp)}
+                          conversationId={activeConversationId}
+                        />
+                      );
+                    })()}
+
+                    {/* Email Type Choice */}
+                    {message.component === "email-type-choice" && message.data && (() => {
+                      const { icp } = message.data as { icp: ICP };
+                      return (
+                        <EmailTypeChoice
+                          onSelect={(type) => handleEmailTypeChoice(type, icp)}
+                        />
+                      );
+                    })()}
+
+                    {/* Sequence Length Choice */}
+                    {message.component === "sequence-length-choice" && message.data && (() => {
+                      const { icp } = message.data as { icp: ICP };
+                      return (
+                        <SequenceLengthChoice
+                          onSelect={(days) => handleSequenceLengthChoice(days, icp)}
+                        />
+                      );
+                    })()}
+
+                    {/* Landing Page Choice */}
+                    {/* One-Time Email Card */}
+                    {message.component === "one-time-email" && message.data && (() => {
+                      const data = message.data as Record<string, unknown>;
+                      return (
+                        <OneTimeEmailCard
+                          data={data}
+                          personaTitle={data.personaTitle || "Your Persona"}
+                        />
+                      );
+                    })()}
+
+                    {/* LinkedIn Outreach */}
+                    {message.component === "linkedin-outreach" && message.data && (() => {
+                      const data = message.data as LinkedInOutreachData & { personaTitle: string };
+                      return (
+                        <LinkedInOutreachCard
+                          data={data}
+                          personaTitle={data.personaTitle}
+                        />
+                      );
+                    })()}
+
+                    {/* Email Sequence */}
+                    {message.component === "email-sequence" && message.data && (() => {
+                      const data = message.data as EmailSequenceData & { personaTitle: string };
+                      return (
+                        <EmailSequenceCard
+                          data={data}
+                          personaTitle={data.personaTitle}
+                        />
+                      );
+                    })()}
+
                   </div>
                 )}
               </div>
@@ -1685,6 +2164,11 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
         profiles={linkedInProfiles}
         loading={loadingProfiles}
       />
+
+      {/* Memory Status Indicator */}
+      {activeConversationId && (
+        <MemoryStatusIndicator conversationId={activeConversationId} />
+      )}
     </div>
   );
 }

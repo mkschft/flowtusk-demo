@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flowtusk - How It Works</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'flowtusk-pink': '#FF6B9D',
+            'flowtusk-purple': '#A78BFA',
+            'flowtusk-blue': '#60A5FA',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .slide-container {
+      width: 1280px;
+      min-height: 720px;
+      background: 
+        radial-gradient(at 25% 25%, rgba(255, 107, 157, 0.10) 0px, transparent 45%),
+        radial-gradient(at 75% 75%, rgba(167, 139, 250, 0.06) 0px, transparent 45%),
+        radial-gradient(at 80% 15%, rgba(96, 165, 250, 0.11) 0px, transparent 40%),
+        #fefefe;
+      color: #111827;
+      position: relative;
+    }
+    
+    .dotted-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.4;
+      background-image: radial-gradient(circle, #d1d5db 1px, transparent 1px);
+      background-size: 20px 20px;
+      z-index: 0;
+    }
+    
+    .content {
+      position: relative;
+      z-index: 1;
+      padding: 60px 80px;
+    }
+    
+    .title {
+      font-size: 36px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 15px;
+      line-height: 1.2;
+    }
+    
+    .subtitle {
+      font-size: 20px;
+      color: #6b7280;
+      margin-bottom: 40px;
+    }
+    
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+      margin-bottom: 35px;
+    }
+    
+    .feature-card {
+      background: white;
+      border: 2px solid;
+      border-image: linear-gradient(135deg, #FF6B9D, #A78BFA) 1;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      gap: 15px;
+      align-items: flex-start;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .feature-card:hover {
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      transform: translateY(-2px);
+    }
+    
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #FF6B9D, #A78BFA);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    
+    .feature-text {
+      font-size: 15px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+    
+    .illustration-card {
+      width: 100%;
+      height: 240px;
+      border: 2px solid;
+      border-image: linear-gradient(135deg, #FF6B9D, #A78BFA) 1;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.03), rgba(167, 139, 250, 0.03));
+    }
+    
+    .placeholder-icon {
+      font-size: 36px;
+      background: linear-gradient(to right, #FF6B9D, #A78BFA);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+    
+    .placeholder-text {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="dotted-grid"></div>
+    <div class="content">
+      <h1 class="title">Simple prompt. Complete funnel. Real results.</h1>
+      <p class="subtitle">Built on modern LLM architecture with specialized B2B marketing models</p>
+      
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">✨</div>
+          <div class="feature-text">
+            <strong>Customize entire campaigns</strong> by "vibe-creating" every component
+          </div>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <div class="feature-text">
+            Each agent is <strong>powered by GenAI</strong> and trained on real-world data from <strong>100+ B2B campaigns</strong>
+          </div>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-text">
+            Users stay in <strong>one clean dashboard</strong>—no more tool juggling
+          </div>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🔧</div>
+          <div class="feature-text">
+            Built on <strong>modern LLM architecture</strong> with specialized B2B marketing models
+          </div>
+        </div>
+      </div>
+      
+      <div class="illustration-card">
+        <div class="placeholder-icon">
+          🔄
+        </div>
+        <div class="placeholder-text">
+          <strong>Illustration:</strong> Step-by-step visual flow<br><br>
+          1. User types prompt in chat box → 2. Four agents simultaneously work (animated gears/cogs) → 3. Complete funnel appears on screen → 4. Campaign goes live with success metrics
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

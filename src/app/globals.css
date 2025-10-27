@@ -45,12 +45,12 @@
 
 :root {
   --radius: 0.625rem;
-  
+
   /* Flowtusk Brand Colors */
   --flowtusk-pink: #FF6B9D;
   --flowtusk-purple: #A78BFA;
   --flowtusk-blue: #60A5FA;
-  
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

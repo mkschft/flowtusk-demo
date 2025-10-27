@@ -116,7 +116,6 @@ src/
 │   └── globals.css              # Flowtusk brand styles
 ├── components/
 │   ├── ui/                      # shadcn/ui components
-│   └── ai-elements/             # AI Elements components
 └── lib/
     ├── utils.ts                 # Utility functions
     └── supabase.ts              # Supabase client
