@@ -278,6 +278,8 @@ class MemoryManager {
   }
 
   private loadFromStorage(): void {
+    if (typeof window === "undefined") return;
+
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (stored) {
@@ -293,6 +295,8 @@ class MemoryManager {
   }
 
   private saveToStorage(): void {
+    if (typeof window === "undefined") return;
+
     try {
       const data = Object.fromEntries(this.memories);
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
