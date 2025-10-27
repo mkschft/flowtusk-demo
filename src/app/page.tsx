@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, ArrowUp, Plus, MessageSquare, Sparkles, Search, Brain, Wand2, Quote, CheckCircle2, Zap, Target, TrendingUp, ChevronDown, Check, Eye, Users, Building, MapPin, Calendar, ExternalLink } from "lucide-react";
 import { LandingPageSection } from "@/components/LandingPageSection";
 import { LinkedInProfileDrawer } from "@/components/LinkedInProfileDrawer";
+import { ValuePropBuilderWrapper } from "@/components/ValuePropBuilderWrapper";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SystemMessage } from "@/components/ui/system-message";
 import { nanoid } from "nanoid";
@@ -93,12 +94,35 @@ type ThinkingStep = {
   substeps?: string[];
 };
 
+type ValuePropVariable = {
+  key: string;
+  label: string;
+  type: 'dropdown' | 'input';
+  options?: string[];
+  selectedValue: string;
+  placeholder?: string;
+};
+
+type ValuePropVariation = {
+  id: string;
+  style: string;
+  text: string;
+  useCase: string;
+  emoji: string;
+};
+
+type ValuePropData = {
+  variables: ValuePropVariable[];
+  variations: ValuePropVariation[];
+  icp: ICP;
+};
+
 type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  component?: "icps" | "landing-preview";
-  data?: ICP[] | LandingPage;
+  component?: "icps" | "landing-preview" | "value-prop";
+  data?: ICP[] | LandingPage | ValuePropData;
   thinking?: ThinkingStep[];
 };
 
@@ -765,6 +789,111 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
     addMessage({
       id: nanoid(),
       role: "user",
+      content: `Create value proposition for: ${icp.title}`,
+    });
+
+    // Create thinking message for value prop
+    const thinkingMsgId = nanoid();
+    addMessage({
+      id: thinkingMsgId,
+      role: "assistant",
+      content: "thinking",
+      thinking: [
+        { id: 'analyze', label: 'Analyzing persona insights', status: 'pending' },
+        { id: 'generate', label: 'Crafting value proposition', status: 'pending' },
+        { id: 'variations', label: 'Creating variations', status: 'pending' },
+      ],
+    });
+
+    try {
+      // Step 1: Analyze
+      const analyzeStart = Date.now();
+      updateThinkingStep(thinkingMsgId, 'analyze', { 
+        status: 'running', 
+        startTime: analyzeStart,
+        substeps: ['Extracting pain points', 'Identifying goals']
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      updateThinkingStep(thinkingMsgId, 'analyze', { 
+        status: 'complete',
+        duration: Date.now() - analyzeStart,
+        substeps: [`${icp.painPoints.length} pain points identified`, `${icp.goals.length} goals mapped`]
+      });
+
+      // Step 2: Generate value prop
+      const generateStart = Date.now();
+      updateThinkingStep(thinkingMsgId, 'generate', { 
+        status: 'running',
+        startTime: generateStart,
+        substeps: ['Creating template with variables']
+      });
+
+      const valuePropRes = await fetch("/api/generate-value-prop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          icp,
+          websiteUrl
+        }),
+      });
+
+      if (!valuePropRes.ok) throw new Error("Failed to generate value prop");
+      const valuePropData = await valuePropRes.json();
+
+      updateThinkingStep(thinkingMsgId, 'generate', { 
+        status: 'complete',
+        duration: Date.now() - generateStart,
+        substeps: ['Template ready with 7 variables']
+      });
+
+      // Step 3: Variations (already generated)
+      const variationsStart = Date.now();
+      updateThinkingStep(thinkingMsgId, 'variations', { 
+        status: 'running',
+        startTime: variationsStart,
+        substeps: ['Generating 5 style variations']
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      updateThinkingStep(thinkingMsgId, 'variations', { 
+        status: 'complete',
+        duration: Date.now() - variationsStart,
+        substeps: ['5 variations ready']
+      });
+
+      // Show value prop builder
+      const valuePropMsgId = nanoid();
+      addMessage({
+        id: valuePropMsgId,
+        role: "assistant",
+        content: `Here's your personalized value proposition for **${icp.title}**. Customize the variables to match your messaging, then click "Generate Variations" to see different styles.`,
+        component: "value-prop",
+        data: {
+          ...valuePropData,
+          icp
+        },
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "Sorry, something went wrong generating the value proposition. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGenerateLandingPage = async (icp: ICP) => {
+    setIsLoading(true);
+
+    addMessage({
+      id: nanoid(),
+      role: "user",
       content: `Generate landing page for: ${icp.title}`,
     });
 
@@ -1225,6 +1354,15 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
                           );
                         })}
                       </div>
+                    )}
+
+                    {/* Value Prop Builder */}
+                    {message.component === "value-prop" && message.data && (
+                      <ValuePropBuilderWrapper
+                        valuePropData={message.data as ValuePropData}
+                        websiteUrl={websiteUrl}
+                        onGenerateLandingPage={handleGenerateLandingPage}
+                      />
                     )}
 
                     {/* Landing Page Preview Card */}
