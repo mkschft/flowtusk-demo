@@ -8,14 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, ArrowUp, Plus, MessageSquare, Sparkles, Search, Brain, Wand2, ChevronDown, Check, Users, MapPin, CheckCircle2 } from "lucide-react";
 import { LinkedInProfileDrawer } from "@/components/LinkedInProfileDrawer";
 import { ValuePropBuilderWrapper } from "@/components/ValuePropBuilderWrapper";
-import { ContentChoiceCard } from "@/components/ContentChoiceCard";
-import { FunnelSummaryCard } from "@/components/FunnelSummaryCard";
-import { FunnelChoiceCard } from "@/components/FunnelChoiceCard";
-import { EmailTypeChoice } from "@/components/EmailTypeChoice";
-import { SequenceLengthChoice } from "@/components/SequenceLengthChoice";
-import { OneTimeEmailCard } from "@/components/OneTimeEmailCard";
-import { LinkedInOutreachCard } from "@/components/LinkedInOutreachCard";
-import { EmailSequenceCard } from "@/components/EmailSequenceCard";
+import { PersonaShowcase } from "@/components/PersonaShowcase";
+import { type ExportFormat } from "@/components/ExportOptions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SystemMessage } from "@/components/ui/system-message";
 import { nanoid } from "nanoid";
@@ -90,55 +84,18 @@ type ValuePropData = {
   icp: ICP;
 };
 
-type LinkedInMessage = {
-  id: string;
-  step: number;
-  type: 'connection' | 'follow-up-1' | 'follow-up-2';
-  title: string;
-  timing: string;
-  characterCount: number;
-  message: string;
-  personalizationTips: string[];
-  expectedResponse: string;
-};
-
-type LinkedInOutreachData = {
-  messages: LinkedInMessage[];
-  overallStrategy: string;
-  keyTakeaways: string[];
-};
-
-type EmailMessage = {
-  id: string;
-  step: number;
-  type: 'intro' | 'value' | 'social-proof' | 'urgency' | 'breakup';
-  dayNumber: number;
-  subjectLines: string[];
-  body: string;
-  cta: string;
-  openRateBenchmark: string;
-  replyRateBenchmark: string;
-  tips: string[];
-};
-
-type EmailSequenceData = {
-  emails: EmailMessage[];
-  sequenceGoal: string;
-  bestPractices: string[];
-  expectedOutcome: string;
-};
 
 type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  component?: "icps" | "value-prop" | "funnel-summary" | "funnel-choice" | "continue-to-funnel" | "email-type-choice" | "sequence-length-choice" | "one-time-email" | "linkedin-outreach" | "email-sequence";
-  data?: ICP[] | ValuePropData | { icp: ICP; valueProp?: string } | LinkedInOutreachData | EmailSequenceData | Record<string, unknown>;
+  component?: "icps" | "value-prop" | "persona-showcase" | "export-options";
+  data?: ICP[] | ValuePropData | Record<string, unknown>;
   thinking?: ThinkingStep[];
 };
 
 // Enhanced Generation State Types
-type GenerationStep = 'analysis' | 'icp-selection' | 'value-prop' | 'funnel' | 'content-choice' | 'generation' | 'complete';
+type GenerationStep = 'analysis' | 'icp-selection' | 'value-prop' | 'export' | 'complete';
 
 type GeneratedContent = {
   icps?: ICP[];
@@ -161,8 +118,7 @@ type UserJourney = {
   websiteAnalyzed: boolean;
   icpSelected: boolean;
   valuePropGenerated: boolean;
-  contentChoiceMade: boolean;
-  finalContentGenerated: boolean;
+  exported: boolean;
 };
 
 type ConversationMemory = {
@@ -453,6 +409,9 @@ export const SmartButton: React.FC<SmartButtonProps> = ({
     return false;
   };
 
+  // Move isDisabled calculation up before handleClick
+  const isDisabled = propDisabled || isActionDisabled(action) || isLoading;
+
   const handleClick = async () => {
     if (isActionDisabled(action) || isLoading || propDisabled) return;
     
@@ -467,10 +426,8 @@ export const SmartButton: React.FC<SmartButtonProps> = ({
     }
   };
   
-  const isDisabled = propDisabled || isActionDisabled(action) || isLoading;
-  
   return (
-    <button
+    <Button
       {...props}
       disabled={isDisabled}
       onClick={handleClick}
@@ -484,7 +441,7 @@ export const SmartButton: React.FC<SmartButtonProps> = ({
       ) : (
         children
       )}
-    </button>
+    </Button>
   );
 };
 
@@ -618,8 +575,7 @@ export default function ChatPage() {
         websiteAnalyzed: false,
         icpSelected: false,
         valuePropGenerated: false,
-        contentChoiceMade: false,
-        finalContentGenerated: false,
+        exported: false,
       },
       memory: {
         id: newConvId,
@@ -1334,15 +1290,21 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
       memoryManager.addGenerationRecord(activeConversationId, 'value-prop', valuePropData);
       memoryManager.setLastAction(activeConversationId, 'select-icp');
 
-      // Ask user if they want to continue
-      await new Promise(resolve => setTimeout(resolve, 500));
-      addMessage({
-        id: nanoid(),
-        role: "assistant",
-        content: "🎉 Great! Your value proposition is ready. Would you like to create an outreach strategy to connect with this audience?",
-        component: "continue-to-funnel",
-        data: { icp },
-      });
+        // Show final persona showcase (only selected persona)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        addMessage({
+          id: nanoid(),
+          role: "assistant",
+          content: "✨ Here's your ideal customer positioning:",
+          component: "persona-showcase",
+          data: {
+            personas: [icp], // Only show selected persona
+            selectedPersonaId: icp.id,
+            valuePropData: {
+              [icp.id]: valuePropData
+            }
+          }
+        });
 
     } catch (error) {
       console.error("Error:", error);
@@ -1360,350 +1322,83 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
     }
   };
 
-  const handleGenerateFunnel = async (icp: ICP) => {
-    console.log('🚀 [handleGenerateFunnel] Starting funnel generation for ICP:', icp.id);
-    
-    // Show funnel summary
-    addMessage({
-      id: nanoid(),
-      role: "assistant",
-      content: `Perfect! Here's your complete outreach strategy for **${icp.title}**:`,
-      component: "funnel-summary",
-      data: { 
-        icp,
-        valueProp: activeConversation?.generationState.generatedContent.valueProp?.variations?.[0]?.text || "Your value proposition",
-        strategy: `This strategy works because ${icp.personaRole}s typically respond well to personalized email outreach that addresses their specific pain points.`,
-        benchmarks: "25-35% open rate, 5-8% conversion rate, 15-25% lead capture rate"
-      },
-    });
-
-    // Show funnel choices after summary
-    await new Promise(resolve => setTimeout(resolve, 300));
-    addMessage({
-      id: nanoid(),
-      role: "assistant",
-      content: "",
-      component: "funnel-choice",
-      data: { icp },
-    });
-
-    // Record funnel generation in memory
-    memoryManager.addGenerationRecord(activeConversationId, 'funnel', { 
-      icp, 
-      valueProp: activeConversation?.generationState.generatedContent.valueProp 
-    } as Record<string, unknown>);
-  };
-
-  const handleContentChoice = async (
-    choice: 'linkedin' | 'email' | 'landing' | 'lead-magnet',
-    icp: ICP
-  ) => {
-    // Check if action is allowed
-    if (!canPerformAction('make-content-choice')) {
-      console.log('🚫 [handleContentChoice] Action not allowed - generation in progress or prerequisites not met');
-      return;
-    }
-
-    if (choice === 'lead-magnet') {
-      addMessage({
-        id: nanoid(),
-        role: "assistant",
-        content: "🎨 Lead Magnet Generator is coming soon! This will help you create downloadable resources like checklists, templates, and guides to capture emails.",
-      });
-      return;
-    }
-
-    // Check if already completed for this choice and ICP
-    if (isGenerationCompleted(choice, { icp: icp.id })) {
-      console.log(`✅ [handleContentChoice] ${choice} already generated for this ICP`);
-      updateUserJourney({ contentChoiceMade: true });
-      return;
-    }
-
-    // Check if currently generating
-    if (isGenerationInProgress(choice, { icp: icp.id })) {
-      console.log(`⏳ [handleContentChoice] ${choice} generation already in progress`);
-      return;
-    }
-
-    updateGenerationState({ 
-      isGenerating: true, 
-      generationId: `${choice}-${icp.id}`,
-      currentStep: 'generation'
-    });
-    updateUserJourney({ contentChoiceMade: true });
-
-    const choiceTitles = {
-      linkedin: 'LinkedIn Outreach Sequence',
-      email: 'Email Nurture Sequence',
-      landing: 'Landing Page',
-      'lead-magnet': 'Lead Magnet'
-    };
-
-    addMessage({
-      id: nanoid(),
-      role: "user",
-      content: `Generate ${choiceTitles[choice]} for: ${icp.title}`,
-    });
-
-    // Create thinking message
-    const thinkingMsgId = nanoid();
-    const thinkingSteps = choice === 'linkedin' 
-      ? [
-          { id: 'analyze', label: 'Analyzing LinkedIn best practices', status: 'pending' as const },
-          { id: 'connection', label: 'Crafting connection request', status: 'pending' as const },
-          { id: 'followups', label: 'Creating follow-up messages', status: 'pending' as const },
-        ]
-      : [
-          { id: 'analyze', label: 'Analyzing email sequence strategy', status: 'pending' as const },
-          { id: 'subjects', label: 'Generating subject line variations', status: 'pending' as const },
-          { id: 'emails', label: 'Writing email sequence', status: 'pending' as const },
-        ];
-
-    addMessage({
-      id: thinkingMsgId,
-      role: "assistant",
-      content: "thinking",
-      thinking: thinkingSteps,
-    });
-
-    try {
-      // Use idempotent generation
-      const data = await generationManager.generate(
-        choice,
-        { icp: icp.id, websiteUrl },
-        async () => {
-          const apiRoute = choice === 'linkedin' 
-            ? '/api/generate-linkedin-outreach'
-            : '/api/generate-email-sequence';
-
-          // Step 1: Analyze
-          const analyzeStart = Date.now();
-          updateThinkingStep(thinkingMsgId, 'analyze', { 
-            status: 'running',
-            startTime: analyzeStart,
-          });
-
-          await new Promise(resolve => setTimeout(resolve, 400));
-
-          updateThinkingStep(thinkingMsgId, 'analyze', { 
-            status: 'complete',
-            duration: Date.now() - analyzeStart,
-          });
-
-          // Step 2
-          const step2Start = Date.now();
-          const step2Id = choice === 'linkedin' ? 'connection' : 'subjects';
-          updateThinkingStep(thinkingMsgId, step2Id, { 
-            status: 'running',
-            startTime: step2Start,
-          });
-
-          const response = await fetch(apiRoute, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-              icp,
-              websiteUrl
-            }),
-          });
-
-          if (!response.ok) throw new Error(`Failed to generate ${choice} content`);
-          const result = await response.json();
-
-          updateThinkingStep(thinkingMsgId, step2Id, { 
-            status: 'complete',
-            duration: Date.now() - step2Start,
-          });
-
-          return result;
-        }
-      );
-
-      // Step 3
-      const step3Start = Date.now();
-      const step3Id = choice === 'linkedin' ? 'followups' : 'emails';
-      updateThinkingStep(thinkingMsgId, step3Id, { 
-        status: 'running',
-        startTime: step3Start,
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      updateThinkingStep(thinkingMsgId, step3Id, { 
-        status: 'complete',
-        duration: Date.now() - step3Start,
-      });
-
-      // Show results
-      addMessage({
-        id: nanoid(),
-        role: "assistant",
-        content: `Here's your ${choiceTitles[choice]} for **${icp.title}**. All messages are ready to copy and customize!`,
-        component: choice === 'linkedin' ? 'linkedin-outreach' : 'email-sequence',
-        data: { ...data, personaTitle: icp.title },
-      });
-
-      // Update state with generated content
-      updateGenerationState({
-        generatedContent: {
-          ...activeConversation?.generationState.generatedContent,
-          [choice === 'linkedin' ? 'linkedinOutreach' : 'emailSequence']: data
-        },
-        completedSteps: [...(activeConversation?.generationState.completedSteps || []), choice]
-      });
-      updateUserJourney({ finalContentGenerated: true });
-
-      // Show content choice again
-      await new Promise(resolve => setTimeout(resolve, 500));
-      addMessage({
-        id: nanoid(),
-        role: "assistant",
-        content: `Want to create more content for **${icp.title}**?`,
-        component: "content-choice",
-        data: { icp },
-      });
-
-      // Record in memory
-      memoryManager.addGenerationRecord(activeConversationId, choice, data);
-      memoryManager.setLastAction(activeConversationId, 'content-choice');
-
-    } catch (error) {
-      console.error("Error:", error);
-      addMessage({
-        id: nanoid(),
-        role: "assistant",
-        content: `Sorry, something went wrong generating the ${choiceTitles[choice]}. Please try again.`,
-      });
-      memoryManager.addGenerationRecord(activeConversationId, choice, null, false);
-    } finally {
-      updateGenerationState({ 
-        isGenerating: false, 
-        generationId: undefined 
-      });
-    }
-  };
-
-  // New simplified flow handlers
-  const handleFunnelChoice = async (choice: 'email' | 'landing', icp: ICP) => {
-    if (choice === 'landing') {
-      addMessage({
-        id: nanoid(),
-        role: "assistant",
-        content: "",
-        component: "landing-page-choice",
-        data: { icp },
-      });
-    } else if (choice === 'email') {
-      addMessage({
-        id: nanoid(),
-        role: "assistant",
-        content: "",
-        component: "email-type-choice",
-        data: { icp },
-      });
-    }
-  };
-
-  const handleEmailTypeChoice = async (type: 'one-time' | 'sequence', icp: ICP) => {
-    if (type === 'one-time') {
-      // Generate one-time email directly
-      setIsLoading(true);
-      addMessage({
-        id: nanoid(),
-        role: "user",
-        content: `Generate one-time email for: ${icp.title}`,
-      });
-
-      try {
-        const response = await fetch("/api/generate-one-time-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ icp, websiteContext: websiteUrl }),
-        });
-
-        if (!response.ok) throw new Error("Failed to generate one-time email");
-        const data = await response.json();
-
-        addMessage({
-          id: nanoid(),
-          role: "assistant",
-          content: `Here's your **One-Time Email** for **${icp.title}**:`,
-          component: "one-time-email",
-          data: { ...data, personaTitle: icp.title },
-        });
-      } catch (error) {
-        console.error("Error:", error);
-        addMessage({
-          id: nanoid(),
-          role: "assistant",
-          content: "Sorry, something went wrong generating the email. Please try again.",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    } else if (type === 'sequence') {
-      addMessage({
-        id: nanoid(),
-        role: "assistant",
-        content: "",
-        component: "sequence-length-choice",
-        data: { icp },
-      });
-    }
-  };
-
-  const handleSequenceLengthChoice = async (days: 5 | 7 | 10, icp: ICP) => {
+  const handleExport = async (format: ExportFormat, data: { personas: ICP[]; valuePropData: Record<string, ValuePropData>; websiteUrl: string }) => {
+    console.log('🚀 [handleExport] Starting export for format:', format);
     setIsLoading(true);
-    addMessage({
-      id: nanoid(),
-      role: "user",
-      content: `Generate ${days}-day email sequence for: ${icp.title}`,
-    });
-
+    
     try {
-      const response = await fetch("/api/generate-email-sequence", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ icp, websiteUrl, sequenceLength: days }),
+      const response = await fetch(`/api/export/${format}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
       });
-
-      if (!response.ok) throw new Error("Failed to generate email sequence");
-      const data = await response.json();
-
-      addMessage({
-        id: nanoid(),
-        role: "assistant",
-        content: `Here's your **${days}-Day Email Sequence** for **${icp.title}**:`,
-        component: "email-sequence",
-        data: { ...data, personaTitle: icp.title },
-      });
+      
+      if (!response.ok) throw new Error(`Export failed: ${format}`);
+      
+      const result = await response.json();
+      
+      // Handle different export types
+      if (format === 'google-slides') {
+        // Open Google Slides template
+        if (result.templateUrl) {
+          window.open(result.templateUrl, '_blank');
+        }
+        
+        addMessage({
+          id: nanoid(),
+          role: "assistant",
+          content: `✅ **Opening Google Slides template...**\n\n${result.message}\n\n${result.instructions}`
+        });
+        
+      } else if (format === 'linkedin') {
+        // Copy first post to clipboard
+        const firstPost = result.posts?.[0]?.post || result.combinedPost;
+        await navigator.clipboard.writeText(firstPost);
+        
+        addMessage({
+          id: nanoid(),
+          role: "assistant",
+          content: `✅ **LinkedIn post copied to clipboard!**\n\nHere's what was copied:\n\n---\n\n${firstPost}\n\n---\n\n💡 ${result.tips?.[0] || 'Post during business hours for best engagement'}`
+        });
+        
+      } else if (format === 'plain-text') {
+        // Copy to clipboard
+        await navigator.clipboard.writeText(result.content);
+        
+        addMessage({
+          id: nanoid(),
+          role: "assistant",
+          content: `✅ **Plain text copied to clipboard!**\n\n📊 Stats:\n- ${result.characterCount} characters\n- ${result.lineCount} lines\n- ${data.personas.length} personas included\n\nYou can now paste this into any document, email, or notes app.`
+        });
+        
+      } else if (format === 'pdf') {
+        addMessage({
+          id: nanoid(),
+          role: "assistant",
+          content: `📄 **PDF export coming soon!**\n\n${result.message}\n\nAlternative: ${result.alternative}`
+        });
+      } else if (format === 'share-link') {
+        addMessage({
+          id: nanoid(),
+          role: "assistant",
+          content: `🔗 **Share link feature coming soon!**\n\nThis will let you create a public URL to share your positioning with team members or stakeholders.`
+        });
+      }
+      
+      // Update user journey
+      updateUserJourney({ exported: true });
+      memoryManager.addGenerationRecord(activeConversationId, `export-${format}`, result);
+      
     } catch (error) {
-      console.error("Error:", error);
+      console.error('Export error:', error);
       addMessage({
         id: nanoid(),
         role: "assistant",
-        content: "Sorry, something went wrong generating the sequence. Please try again.",
+        content: `❌ Export failed for ${format}. Please try again or choose a different format.`
       });
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleFunnelSummaryRegenerate = async (icp: ICP) => {
-    // Regenerate funnel summary with same data
-    addMessage({
-      id: nanoid(),
-      role: "assistant",
-      content: `Here's your updated marketing funnel strategy for **${icp.title}**:`,
-      component: "funnel-summary",
-      data: { 
-        icp,
-        valueProp: "Your value proposition",
-        strategy: `This funnel works because ${icp.personaRole}s typically respond well to personalized email outreach followed by targeted landing pages that address their specific pain points.`,
-        benchmarks: "25-35% open rate, 5-8% conversion rate, 15-25% lead capture rate"
-      },
-    });
   };
 
   return (
@@ -1753,10 +1448,10 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
               <div className="text-center py-20">
                 <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <h2 className="text-2xl font-bold mb-2">
-                  Generate Landing Pages
+                  Your Positioning Co-Pilot
                 </h2>
                 <p className="text-muted-foreground mb-6">
-                  Enter a website URL to get started
+                  Enter a website URL to generate customer personas and value propositions
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {["https://taxstar.app", "https://stripe.com", "https://linear.app"].map(url => (
@@ -1998,114 +1693,37 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
                       />
                     )}
 
-                    {/* Content Choice Card */}
-                    {message.component === "content-choice" && message.data && (() => {
-                      const { icp } = message.data as { icp: ICP };
+                    {/* Persona Showcase */}
+                    {message.component === "persona-showcase" && message.data && (() => {
+                      const showcaseData = message.data as { personas: ICP[]; selectedPersonaId: string; valuePropData: Record<string, ValuePropData> };
                       return (
-                        <ContentChoiceCard
-                          onSelect={(choice) => handleContentChoice(choice, icp)}
+                        <PersonaShowcase
+                          personas={showcaseData.personas}
+                          selectedPersonaId={showcaseData.selectedPersonaId}
+                          valuePropData={showcaseData.valuePropData}
+                          onPersonaChange={(personaId) => {
+                            // Update the message data to reflect new selection
+                            setConversations(prev =>
+                              prev.map(conv =>
+                                conv.id === activeConversationId
+                                  ? {
+                                      ...conv,
+                                      messages: conv.messages.map(m =>
+                                        m.id === message.id
+                                          ? { ...m, data: { ...showcaseData, selectedPersonaId: personaId } }
+                                          : m
+                                      ),
+                                    }
+                                  : conv
+                              )
+                            );
+                          }}
+                          onExport={handleExport}
+                          readOnly={false}
                         />
                       );
                     })()}
 
-                    {/* Funnel Summary Card */}
-                    {message.component === "funnel-summary" && message.data && (() => {
-                      const data = message.data as { icp: ICP; valueProp?: string; strategy?: string; benchmarks?: string };
-                      return (
-                        <FunnelSummaryCard
-                          data={data}
-                          onRegenerate={() => handleFunnelSummaryRegenerate(data.icp)}
-                        />
-                      );
-                    })()}
-
-                    {/* Funnel Choice Card */}
-                    {/* Continue to Funnel Prompt */}
-                    {message.component === "continue-to-funnel" && message.data && (() => {
-                      const { icp } = message.data as { icp: ICP };
-                      return (
-                        <Card className="p-6 border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex-1">
-                              <p className="text-sm text-muted-foreground">
-                                Ready to create personalized outreach content for your target audience?
-                              </p>
-                            </div>
-                            <Button
-                              onClick={() => handleGenerateFunnel(icp)}
-                              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-lg"
-                            >
-                              <Sparkles className="h-4 w-4 mr-2" />
-                              Create Outreach Strategy
-                            </Button>
-                          </div>
-                        </Card>
-                      );
-                    })()}
-
-                    {message.component === "funnel-choice" && message.data && (() => {
-                      const { icp } = message.data as { icp: ICP };
-                      return (
-                        <FunnelChoiceCard
-                          onSelect={(choice) => handleFunnelChoice(choice, icp)}
-                          conversationId={activeConversationId}
-                        />
-                      );
-                    })()}
-
-                    {/* Email Type Choice */}
-                    {message.component === "email-type-choice" && message.data && (() => {
-                      const { icp } = message.data as { icp: ICP };
-                      return (
-                        <EmailTypeChoice
-                          onSelect={(type) => handleEmailTypeChoice(type, icp)}
-                        />
-                      );
-                    })()}
-
-                    {/* Sequence Length Choice */}
-                    {message.component === "sequence-length-choice" && message.data && (() => {
-                      const { icp } = message.data as { icp: ICP };
-                      return (
-                        <SequenceLengthChoice
-                          onSelect={(days) => handleSequenceLengthChoice(days, icp)}
-                        />
-                      );
-                    })()}
-
-                    {/* Landing Page Choice */}
-                    {/* One-Time Email Card */}
-                    {message.component === "one-time-email" && message.data && (() => {
-                      const data = message.data as Record<string, unknown>;
-                      return (
-                        <OneTimeEmailCard
-                          data={data}
-                          personaTitle={data.personaTitle || "Your Persona"}
-                        />
-                      );
-                    })()}
-
-                    {/* LinkedIn Outreach */}
-                    {message.component === "linkedin-outreach" && message.data && (() => {
-                      const data = message.data as LinkedInOutreachData & { personaTitle: string };
-                      return (
-                        <LinkedInOutreachCard
-                          data={data}
-                          personaTitle={data.personaTitle}
-                        />
-                      );
-                    })()}
-
-                    {/* Email Sequence */}
-                    {message.component === "email-sequence" && message.data && (() => {
-                      const data = message.data as EmailSequenceData & { personaTitle: string };
-                      return (
-                        <EmailSequenceCard
-                          data={data}
-                          personaTitle={data.personaTitle}
-                        />
-                      );
-                    })()}
 
                   </div>
                 )}

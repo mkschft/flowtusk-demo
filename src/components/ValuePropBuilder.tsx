@@ -222,6 +222,7 @@ export function ValuePropBuilder({
                 action="generate-variations"
                 onClick={handleGenerateVariations}
                 conversationId={conversationId}
+                size="default"
                 className="flex-1 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white"
                 loadingText="Generating variations..."
               >
