@@ -22,6 +22,8 @@ type ICP = {
   personaName: string;
   personaRole: string;
   personaCompany: string;
+  location: string;
+  country: string;
 };
 
 type LinkedInPost = {
@@ -330,6 +332,14 @@ export default function ChatPage() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    // Ensure we have an active conversation and get the ID
+    const convId = ensureActiveConversation();
+    
+    // Wait a tick for state to settle if we just created a new conversation
+    if (convId !== activeConversationId) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
     const userMessage: ChatMessage = {
       id: nanoid(),
       role: "user",
@@ -427,7 +437,7 @@ export default function ChatPage() {
         });
 
         if (!icpRes.ok) throw new Error("Failed to generate ICPs");
-        const { icps, brandColors } = await icpRes.json();
+        const { icps, brandColors, summary } = await icpRes.json();
         
         // Store brand colors
         if (brandColors) {
@@ -444,11 +454,36 @@ export default function ChatPage() {
           ]
         });
 
-        // Show results
+        // Build summary message
+        const hostname = new URL(url).hostname.replace('www.', '');
+        const businessDesc = summary?.businessDescription || "your business";
+        const targetMarket = summary?.targetMarket || "";
+        const painPoints = summary?.painPointsWithMetrics || [];
+        const multiplier = summary?.opportunityMultiplier || "3";
+        
+        const summaryText = `I've analyzed **${hostname}** and discovered key insights:
+
+${businessDesc}${targetMarket ? ` ${targetMarket}` : ''}
+
+**Key Pain Points & Impact:**
+${painPoints.slice(0, 3).map((p: any) => `• **${p.pain}** — ${p.metric}`).join('\n')}
+
+**Growth Opportunity:** By targeting the right customer profile with personalized messaging, you have potential to reach up to **${multiplier}x more qualified leads** and significantly improve conversion rates.
+
+I've identified **${icps.length} ideal customer profiles** below. Select one to customize your funnel:`;
+
+        // Show summary
         addMessage({
           id: nanoid(),
           role: "assistant",
-          content: "I've analyzed your website and identified 3 ideal customer profiles. Select one to generate a targeted landing page:",
+          content: summaryText,
+        });
+
+        // Show ICP cards
+        addMessage({
+          id: nanoid(),
+          role: "assistant",
+          content: "",
           component: "icps",
           data: icps,
         });
@@ -535,6 +570,22 @@ export default function ChatPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Auto-create conversation if none exists
+  const ensureActiveConversation = () => {
+    if (!activeConversationId || !activeConversation) {
+      const newConv: Conversation = {
+        id: nanoid(),
+        title: "New conversation",
+        messages: [],
+        createdAt: new Date(),
+      };
+      setConversations(prev => [newConv, ...prev]);
+      setActiveConversationId(newConv.id);
+      return newConv.id; // Return the new ID immediately
+    }
+    return activeConversationId;
   };
 
   // Mock LinkedIn profile generator
@@ -1017,8 +1068,14 @@ export default function ChatPage() {
                     {message.content && 
                      !message.content.startsWith("crawl_complete:") &&
                      !["crawling_website", "generating_icps", "crafting_landing_page", "thinking"].includes(message.content) && (
-                      <div className="text-sm leading-relaxed">
-                        {message.content}
+                      <div className="text-sm leading-relaxed whitespace-pre-line">
+                        {message.content.split('**').map((part, i) => 
+                          i % 2 === 0 ? (
+                            <span key={i}>{part}</span>
+                          ) : (
+                            <strong key={i} className="font-semibold">{part}</strong>
+                          )
+                        )}
                       </div>
                     )}
 
@@ -1089,6 +1146,14 @@ export default function ChatPage() {
                                     <p className="text-xs text-muted-foreground/70 truncate">
                                       {icp.personaCompany}
                                     </p>
+                                    {icp.location && icp.country && (
+                                      <div className="flex items-center gap-1 mt-1">
+                                        <MapPin className="h-3 w-3 text-muted-foreground/50" />
+                                        <p className="text-xs text-muted-foreground/60 truncate">
+                                          {icp.location}, {icp.country}
+                                        </p>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
 
