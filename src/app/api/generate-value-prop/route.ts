@@ -26,10 +26,20 @@ Context:
 - Goals: ${icp.goals.join(', ')}
 - Demographics: ${icp.demographics}
 
-Task: Generate a value proposition template with customizable variables and 5 variations.
+Task: Generate a value proposition template with customizable variables, 5 variations, and a compact summary.
 
 Return a JSON object with this exact structure:
 {
+  "summary": {
+    "mainInsight": "<1-2 sentences: The core value proposition strategy and why it works for this persona>",
+    "painPointsAddressed": [
+      "<Top pain point 1 being solved>",
+      "<Top pain point 2 being solved>",
+      "<Top pain point 3 being solved>"
+    ],
+    "approachStrategy": "<1 sentence: The positioning approach - e.g., 'Time-saving automation', 'Cost reduction through AI', 'Quality improvement via data'>",
+    "expectedImpact": "<Quantified benefit - e.g., '40% faster workflows', '2x more qualified leads', '$50k annual savings'>"
+  },
   "variables": [
     {
       "key": "role",
@@ -131,7 +141,10 @@ Important:
 - Use specific, quantifiable metrics
 - Tailor everything to the persona's actual pain points and goals
 - Make variations feel different from each other
-- Ensure all text is ready to copy-paste (no placeholders)`;
+- Ensure all text is ready to copy-paste (no placeholders)
+- Summary should be compact and focused (~150 words total)
+- Pain points should be specific to the persona, not generic
+- Expected impact should include realistic numbers/metrics`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",

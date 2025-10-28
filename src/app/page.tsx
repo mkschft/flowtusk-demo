@@ -12,6 +12,7 @@ import { PersonaShowcase } from "@/components/PersonaShowcase";
 import { type ExportFormat } from "@/components/ExportOptions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SystemMessage } from "@/components/ui/system-message";
+import { SummaryApprovalCard } from "@/components/SummaryApprovalCard";
 import { nanoid } from "nanoid";
 
 type ICP = {
@@ -89,7 +90,7 @@ type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  component?: "icps" | "value-prop" | "persona-showcase" | "export-options";
+  component?: "icps" | "value-prop" | "persona-showcase" | "export-options" | "value-prop-summary" | "positioning-summary";
   data?: ICP[] | ValuePropData | Record<string, unknown>;
   thinking?: ThinkingStep[];
 };
@@ -1135,13 +1136,137 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
     setSelectedProfilesICP(icp);
     setLoadingProfiles(true);
     setShowProfilesDrawer(true);
-    
+
     // Simulate loading delay
     setTimeout(() => {
       const profiles = generateMockProfiles();
       setLinkedInProfiles(profiles);
       setLoadingProfiles(false);
     }, 800);
+  };
+
+  // Handler for approving value prop summary
+  const handleApproveValuePropSummary = async (data: { valuePropData: ValuePropData; icp: ICP }) => {
+    // Show value prop builder
+    addMessage({
+      id: nanoid(),
+      role: "assistant",
+      content: `Here's your personalized value proposition for **${data.icp.title}**. Customize the variables to match your messaging, then click "Generate Variations" to see different styles.`,
+      component: "value-prop",
+      data: {
+        ...data.valuePropData,
+        icp: data.icp
+      },
+    });
+
+    updateUserJourney({ valuePropGenerated: true });
+    memoryManager.addGenerationRecord(activeConversationId, 'approve-value-prop-summary', { approved: true } as Record<string, unknown>);
+  };
+
+  // Handler for when variations are generated
+  const handleVariationsGenerated = (valuePropData: ValuePropData, icp: ICP) => {
+    // Step 1: Show text message with mini summary of accomplishment
+    const accomplishmentText = `Excellent! I've generated 5 value proposition variations for **${icp.title}**.
+
+**What We Created:**
+• ${valuePropData.variations.length} different messaging styles (${valuePropData.variations.map(v => v.style).join(', ')})
+• Customized for ${icp.personaRole} in ${icp.personaCompany}
+• Strategy: ${valuePropData.summary.approachStrategy}
+• Expected impact: ${valuePropData.summary.expectedImpact}
+
+Now let me prepare your complete positioning package...`;
+
+    addMessage({
+      id: nanoid(),
+      role: "assistant",
+      content: accomplishmentText
+    });
+
+    // Step 2: Show positioning summary card after short delay for readability
+    setTimeout(() => {
+      const positioningSummary = `I've created a complete positioning package for **${icp.personaName}** (${icp.title}).
+
+**Persona Match:**
+• ${icp.personaRole} at ${icp.personaCompany}
+• ${icp.location}, ${icp.country}
+
+**Value Proposition Strategy:**
+${valuePropData.summary.approachStrategy}
+
+**Why This Positioning Works:**
+${valuePropData.summary.mainInsight}
+
+**Impact You Can Expect:**
+${valuePropData.summary.expectedImpact}
+
+Ready to see your complete positioning package?`;
+
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "",
+        component: "positioning-summary",
+        data: {
+          summary: positioningSummary,
+          icp,
+          valuePropData
+        }
+      });
+    }, 1000);
+  };
+
+  // Handler for regenerating value prop
+  const handleRegenerateValueProp = async () => {
+    if (!selectedIcp) return;
+
+    addMessage({
+      id: nanoid(),
+      role: "assistant",
+      content: "Regenerating with a fresh perspective...",
+    });
+
+    // Clear cache and regenerate
+    generationManager.clearCache();
+    await handleSelectIcp(selectedIcp);
+  };
+
+  // Handler for approving positioning summary
+  const handleApprovePositioningSummary = (data: { icp: ICP; valuePropData: ValuePropData }) => {
+    // Step 1: Show text explaining what they'll see
+    const explanationText = `Here's your complete customer positioning package 🎯
+
+**What's Included:**
+• **Persona Profile** – Detailed ICP with demographics, pain points, and goals
+• **Value Propositions** – 5 messaging variations for different channels
+• **Positioning Strategy** – The "why" behind this approach
+• **Export Options** – Download as Google Slides, LinkedIn post, or plain text
+
+This is your go-to resource for all messaging, marketing, and sales targeting **${data.icp.title}**.`;
+
+    addMessage({
+      id: nanoid(),
+      role: "assistant",
+      content: explanationText
+    });
+
+    // Step 2: Show PersonaShowcase after short delay for readability
+    setTimeout(() => {
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "",
+        component: "persona-showcase",
+        data: {
+          personas: [data.icp],
+          selectedPersonaId: data.icp.id,
+          valuePropData: {
+            [data.icp.id]: data.valuePropData
+          }
+        }
+      });
+
+      memoryManager.addGenerationRecord(activeConversationId, 'approve-positioning-summary', { approved: true } as Record<string, unknown>);
+    }, 1000);
   };
 
   const handleSelectIcp = async (icp: ICP) => {
@@ -1263,15 +1388,27 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
         }
       );
 
-      // Show value prop builder
-      const valuePropMsgId = nanoid();
+      // Format summary for display
+      const summary = valuePropData.summary;
+      const summaryText = `**Key Insight:**
+${summary.mainInsight}
+
+**Pain Points Addressed:**
+${summary.painPointsAddressed.map((p: string, i: number) => `${i + 1}. ${p}`).join('\n')}
+
+**Positioning Strategy:** ${summary.approachStrategy}
+
+**Expected Impact:** ${summary.expectedImpact}`;
+
+      // Show summary with approval step
       addMessage({
-        id: valuePropMsgId,
+        id: nanoid(),
         role: "assistant",
-        content: `Here's your personalized value proposition for **${icp.title}**. Customize the variables to match your messaging, then click "Generate Variations" to see different styles.`,
-        component: "value-prop",
+        content: "",
+        component: "value-prop-summary",
         data: {
-          ...valuePropData,
+          summary: summaryText,
+          valuePropData,
           icp
         },
       });
@@ -1284,27 +1421,10 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
         },
         completedSteps: [...(activeConversation?.generationState.completedSteps || []), 'value-prop']
       });
-      updateUserJourney({ valuePropGenerated: true });
 
       // Record in memory
       memoryManager.addGenerationRecord(activeConversationId, 'value-prop', valuePropData);
       memoryManager.setLastAction(activeConversationId, 'select-icp');
-
-        // Show final persona showcase (only selected persona)
-        await new Promise(resolve => setTimeout(resolve, 500));
-        addMessage({
-          id: nanoid(),
-          role: "assistant",
-          content: "✨ Here's your ideal customer positioning:",
-          component: "persona-showcase",
-          data: {
-            personas: [icp], // Only show selected persona
-            selectedPersonaId: icp.id,
-            valuePropData: {
-              [icp.id]: valuePropData
-            }
-          }
-        });
 
     } catch (error) {
       console.error("Error:", error);
@@ -1684,14 +1804,45 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
                       </div>
                     )}
 
+                    {/* Value Prop Summary with Approval */}
+                    {message.component === "value-prop-summary" && message.data && (() => {
+                      const data = message.data as { summary: string; valuePropData: ValuePropData; icp: ICP };
+                      return (
+                        <SummaryApprovalCard
+                          summary={data.summary}
+                          onContinue={() => handleApproveValuePropSummary({ valuePropData: data.valuePropData, icp: data.icp })}
+                          onRegenerate={handleRegenerateValueProp}
+                          continueButtonText="Show Value Prop Builder →"
+                          regenerateButtonText="Regenerate"
+                        />
+                      );
+                    })()}
+
                     {/* Value Prop Builder */}
-                    {message.component === "value-prop" && message.data && (
-                      <ValuePropBuilderWrapper
-                        valuePropData={message.data as ValuePropData}
-                        websiteUrl={websiteUrl}
-                        conversationId={activeConversationId}
-                      />
-                    )}
+                    {message.component === "value-prop" && message.data && (() => {
+                      const data = message.data as ValuePropData;
+                      return (
+                        <ValuePropBuilderWrapper
+                          valuePropData={data}
+                          websiteUrl={websiteUrl}
+                          conversationId={activeConversationId}
+                          onVariationsGenerated={(updatedData) => handleVariationsGenerated(updatedData, data.icp)}
+                        />
+                      );
+                    })()}
+
+                    {/* Positioning Summary with Approval */}
+                    {message.component === "positioning-summary" && message.data && (() => {
+                      const data = message.data as { summary: string; icp: ICP; valuePropData: ValuePropData };
+                      return (
+                        <SummaryApprovalCard
+                          summary={data.summary}
+                          onContinue={() => handleApprovePositioningSummary({ icp: data.icp, valuePropData: data.valuePropData })}
+                          continueButtonText="Show My Positioning →"
+                          showRegenerateButton={false}
+                        />
+                      );
+                    })()}
 
                     {/* Persona Showcase */}
                     {message.component === "persona-showcase" && message.data && (() => {

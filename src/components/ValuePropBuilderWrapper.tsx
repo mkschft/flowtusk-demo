@@ -44,12 +44,14 @@ type ValuePropBuilderWrapperProps = {
   valuePropData: ValuePropData;
   websiteUrl: string;
   conversationId?: string;
+  onVariationsGenerated?: (data: ValuePropData) => void;
 };
 
 export function ValuePropBuilderWrapper({
   valuePropData,
   websiteUrl,
   conversationId,
+  onVariationsGenerated,
 }: ValuePropBuilderWrapperProps) {
   const [localVariables, setLocalVariables] = useState(valuePropData.variables);
   const [localVariations, setLocalVariations] = useState(valuePropData.variations);
@@ -78,6 +80,16 @@ export function ValuePropBuilderWrapper({
       if (response.ok) {
         const data = await response.json();
         setLocalVariations(data.variations);
+
+        // Call callback with full data including updated variations
+        if (onVariationsGenerated) {
+          onVariationsGenerated({
+            ...valuePropData,
+            variables: localVariables,
+            variations: data.variations,
+            summary: data.summary
+          });
+        }
       }
     } catch (error) {
       console.error("Error generating variations:", error);

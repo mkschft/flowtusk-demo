@@ -51,7 +51,7 @@ type ValuePropData = {
   icp: ICP;
 };
 
-export type ExportFormat = 'google-slides' | 'linkedin' | 'plain-text' | 'pdf' | 'share-link';
+export type ExportFormat = 'google-slides' | 'linkedin' | 'plain-text' | 'pdf' | 'share-link' | 'image';
 
 type ExportOptionsProps = {
   personas: ICP[];

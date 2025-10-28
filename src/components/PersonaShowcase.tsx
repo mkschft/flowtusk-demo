@@ -1,20 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Copy, 
-  Check, 
-  ChevronDown, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Copy,
+  Check,
+  ChevronDown,
   ChevronUp,
   MapPin,
   Target,
   TrendingUp,
   FileText,
   Presentation,
-  Share2
+  Share2,
+  Download,
+  FileImage
 } from "lucide-react";
 
 type ICP = {
@@ -73,7 +83,8 @@ export function PersonaShowcase({
 }: PersonaShowcaseProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedPersonaId, setExpandedPersonaId] = useState<string | null>(null);
-  
+  const cardRef = useRef<HTMLDivElement>(null);
+
   const selectedIndex = personas.findIndex(p => p.id === selectedPersonaId);
   
   const handleCopy = async (text: string, id: string) => {
@@ -83,8 +94,40 @@ export function PersonaShowcase({
   };
 
   const handleExport = async (format: string) => {
+    // Handle image export client-side
+    if (format === 'image') {
+      if (!cardRef.current) return;
+
+      try {
+        const html2canvas = (await import('html2canvas')).default;
+        const canvas = await html2canvas(cardRef.current, {
+          backgroundColor: '#ffffff',
+          scale: 2, // 2x for high quality
+          logging: false,
+          useCORS: true, // For external images
+        });
+
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          const selectedPersona = personas.find(p => p.id === selectedPersonaId);
+          link.download = `${selectedPersona?.personaName || 'persona'}-positioning.png`;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+        });
+
+        return;
+      } catch (error) {
+        console.error('Image export failed:', error);
+        return;
+      }
+    }
+
+    // Existing export logic for other formats
     if (!onExport) return;
-    
+
     const selectedPersona = personas.find(p => p.id === selectedPersonaId);
     if (!selectedPersona) return;
 
@@ -92,7 +135,8 @@ export function PersonaShowcase({
       personas: [selectedPersona],
       valuePropData: {
         [selectedPersonaId]: valuePropData[selectedPersonaId]
-      }
+      },
+      websiteUrl: '' // Add if needed
     };
 
     onExport(format, data);
@@ -181,8 +225,11 @@ export function PersonaShowcase({
               >
                 {/* Gradient background */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${color.gradient}`} />
-                
-                <div className="relative p-6 space-y-4">
+
+                <div
+                  ref={isSelected ? cardRef : null}
+                  className="relative p-6 space-y-4"
+                >
                   {/* Header */}
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
@@ -269,46 +316,91 @@ export function PersonaShowcase({
                           </Button>
                         </div>
 
-                        {/* Export Options */}
+                        {/* Export Options - Dropdown Menu */}
                         <div className="pt-3">
-                          <div className="flex flex-wrap gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleExport('google-slides');
-                              }}
-                            >
-                              <Presentation className="h-3 w-3 mr-1" />
-                              Google Slides
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleExport('pdf');
-                              }}
-                            >
-                              <FileText className="h-3 w-3 mr-1" />
-                              PDF
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleExport('linkedin');
-                              }}
-                            >
-                              <Share2 className="h-3 w-3 mr-1" />
-                              LinkedIn
-                            </Button>
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 text-xs w-full hover:bg-purple-50 dark:hover:bg-purple-950"
+                              >
+                                <Download className="h-3 w-3 mr-2" />
+                                Export
+                                <ChevronDown className="h-3 w-3 ml-auto" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-52">
+                              <DropdownMenuLabel className="text-xs">Export Format</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExport('image');
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <FileImage className="h-3.5 w-3.5 mr-2" />
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-medium">PNG Image</span>
+                                  <span className="text-[10px] text-muted-foreground">High-res card image</span>
+                                </div>
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExport('google-slides');
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Presentation className="h-3.5 w-3.5 mr-2" />
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-medium">Google Slides</span>
+                                  <span className="text-[10px] text-muted-foreground">Presentation template</span>
+                                </div>
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExport('linkedin');
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Share2 className="h-3.5 w-3.5 mr-2" />
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-medium">LinkedIn Post</span>
+                                  <span className="text-[10px] text-muted-foreground">Copy to clipboard</span>
+                                </div>
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExport('plain-text');
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <FileText className="h-3.5 w-3.5 mr-2" />
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-medium">Plain Text</span>
+                                  <span className="text-[10px] text-muted-foreground">Copy all details</span>
+                                </div>
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem disabled className="opacity-50">
+                                <FileText className="h-3.5 w-3.5 mr-2" />
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-medium">PDF</span>
+                                  <span className="text-[10px] text-muted-foreground">Coming soon</span>
+                                </div>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
 
