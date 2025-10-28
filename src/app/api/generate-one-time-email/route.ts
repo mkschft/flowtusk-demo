@@ -58,18 +58,16 @@ Create a one-time email with:
 
 Return the response as JSON with this exact structure:
 {
-  "subjectLines": {
-    "A": "Subject line A here",
-    "B": "Subject line B here", 
-    "C": "Subject line C here"
-  },
-  "emailBody": "Full email body text here...",
+  "subjectLines": [
+    "Subject line A here",
+    "Subject line B here", 
+    "Subject line C here"
+  ],
+  "body": "Full email body text here...",
   "cta": "Call to action text here",
-  "benchmarks": {
-    "openRate": "25-35%",
-    "replyRate": "5-8%",
-    "conversionRate": "2-5%"
-  },
+  "openRateBenchmark": "25-35%",
+  "replyRateBenchmark": "5-8%",
+  "conversionBenchmark": "2-5%",
   "tips": [
     "Tip 1 here",
     "Tip 2 here",
@@ -109,7 +107,22 @@ Return the response as JSON with this exact structure:
       throw new Error("Invalid response format from AI");
     }
 
-    return NextResponse.json(emailData);
+    // Transform data to ensure correct format
+    const transformedData = {
+      subjectLines: Array.isArray(emailData.subjectLines) 
+        ? emailData.subjectLines 
+        : emailData.subjectLines 
+          ? Object.values(emailData.subjectLines)
+          : [],
+      body: emailData.body || emailData.emailBody || "",
+      cta: emailData.cta || "",
+      openRateBenchmark: emailData.openRateBenchmark || emailData.benchmarks?.openRate || "25-35%",
+      replyRateBenchmark: emailData.replyRateBenchmark || emailData.benchmarks?.replyRate || "5-8%",
+      conversionBenchmark: emailData.conversionBenchmark || emailData.benchmarks?.conversionRate || "2-5%",
+      tips: Array.isArray(emailData.tips) ? emailData.tips : []
+    };
+
+    return NextResponse.json(transformedData);
 
   } catch (error) {
     console.error("Error generating one-time email:", error);
