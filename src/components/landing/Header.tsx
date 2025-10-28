@@ -58,29 +58,29 @@ export function Header() {
         {isMenuOpen && (
           <div className="md:hidden border-t py-4">
             <nav className="flex flex-col space-y-4">
-              <Link 
-                href="#features" 
+              <Link
+                href="#features"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Features
               </Link>
-              <Link 
-                href="#pricing" 
+              <Link
+                href="#pricing"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Pricing
               </Link>
-              <Link 
-                href="#testimonials" 
+              <Link
+                href="#testimonials"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Testimonials
               </Link>
-              <Link 
-                href="/docs" 
+              <Link
+                href="/docs"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >

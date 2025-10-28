@@ -42,7 +42,7 @@ export function Hero() {
 
           {/* Subheading */}
           <p className="text-lg text-gray-600 mb-6 max-w-2xl mx-auto leading-relaxed">
-            Paste your website URL. Get customer clarity. Export ready-to-use templates—emails, 
+            Paste your website URL. Get customer clarity. Export ready-to-use templates—emails,
             landing pages, LinkedIn, pitch decks—rooted in real customer insights. All in 15 minutes.
           </p>
 

@@ -74,7 +74,7 @@ export function Pricing() {
               Simple, Transparent Pricing
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Choose the plan that fits your needs. All plans include our core features. 
+              Choose the plan that fits your needs. All plans include our core features.
               No hidden fees, no surprises.
             </p>
           </div>
@@ -82,11 +82,11 @@ export function Pricing() {
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {plans.map((plan, index) => (
-              <Card 
+              <Card
                 key={index}
                 className={`relative p-8 ${
-                  plan.popular 
-                    ? 'border-2 border-blue-500 shadow-xl scale-105' 
+                  plan.popular
+                    ? 'border-2 border-blue-500 shadow-xl scale-105'
                     : 'border border-gray-200'
                 }`}
               >
@@ -121,7 +121,7 @@ export function Pricing() {
                 </ul>
 
                 {/* CTA Button */}
-                <Button 
+                <Button
                   asChild
                   className={`w-full ${
                     plan.popular
