@@ -385,11 +385,6 @@ class MemoryManager {
   }
 
   canPerformAction(conversationId: string, action: string): boolean {
-    const completed = this.getCompletedActions(conversationId);
-    const memory = this.getMemory(conversationId);
-    
-    if (!memory) return false;
-
     // Define action dependencies (using actual recorded action names)
     const dependencies: Record<string, string[]> = {
       'select-icp': [], // No prerequisite - ICPs can be selected when shown
@@ -406,6 +401,18 @@ class MemoryManager {
     };
 
     const required = dependencies[action] || [];
+
+    // If no prerequisites required, allow the action immediately
+    // This prevents blocking actions like 'select-icp' when memory hasn't been initialized yet
+    if (required.length === 0) {
+      return true;
+    }
+
+    // For actions with prerequisites, check memory and completed actions
+    const memory = this.getMemory(conversationId);
+    if (!memory) return false;
+
+    const completed = this.getCompletedActions(conversationId);
     return required.every(dep => completed.includes(dep));
   }
 
@@ -1066,6 +1073,10 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
       };
       setConversations(prev => [newConv, ...prev]);
       setActiveConversationId(newConv.id);
+
+      // Initialize memory manager with the new conversation's memory
+      memoryManager.updateMemory(newConv.id, newConv.memory);
+
       return newConv.id; // Return the new ID immediately
     }
     return activeConversationId;
