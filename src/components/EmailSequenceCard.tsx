@@ -126,9 +126,17 @@ export function EmailSequenceCard({ data, personaTitle }: EmailSequenceCardProps
                   
                   <Card className={`border-2 ${colors.border} ml-4`}>
                     {/* Email Header */}
-                    <button
+                    <div
                       onClick={() => setExpandedId(isExpanded ? null : email.id)}
-                      className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setExpandedId(isExpanded ? null : email.id);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className={`p-2 rounded-lg ${colors.bg} shrink-0`}>
@@ -171,7 +179,7 @@ export function EmailSequenceCard({ data, personaTitle }: EmailSequenceCardProps
                         </Button>
                         <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                       </div>
-                    </button>
+                    </div>
 
                     {/* Expanded Content */}
                     {isExpanded && (
