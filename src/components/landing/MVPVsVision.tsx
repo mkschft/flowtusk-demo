@@ -107,7 +107,7 @@ export function MVPVsVision() {
                   <CheckCircle2 className="h-6 w-6 text-white" />
                 </div>
                 <div className="text-left">
-                  <h4 className="font-semibold text-gray-900">Ready to get started?</h4>
+                  <h4 className="font-medium text-gray-900">Ready to get started?</h4>
                   <p className="text-sm text-gray-600">All core features are available today</p>
                 </div>
               </div>

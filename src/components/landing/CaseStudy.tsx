@@ -51,7 +51,7 @@ export function CaseStudy() {
                   </div>
                 </Avatar>
                 <div>
-                  <div className="font-semibold text-gray-900">Marketing Director</div>
+                  <div className="font-medium text-gray-900">Marketing Director</div>
                   <div className="text-gray-600">KONE Corporation</div>
                 </div>
               </div>
@@ -85,7 +85,7 @@ export function CaseStudy() {
 
               {/* Key Benefits */}
               <div className="mt-8 pt-8 border-t border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-4">What KONE achieved:</h4>
+                <h4 className="font-medium text-gray-900 mb-4">What KONE achieved:</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
                     "Faster campaign development",

@@ -58,7 +58,7 @@ export function ProblemSection() {
                   <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                     <Icon className="h-5 w-5 text-red-600" />
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2 text-sm">{point.title}</h3>
+                  <h3 className="font-medium text-gray-900 mb-2 text-sm">{point.title}</h3>
                   <p className="text-xs text-gray-600 mb-3 leading-relaxed">
                     {point.description}
                   </p>

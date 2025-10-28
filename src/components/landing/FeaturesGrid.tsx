@@ -87,7 +87,7 @@ export function FeaturesGrid() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center mb-2">
-                        <h3 className="font-semibold text-gray-900 text-lg">
+                        <h3 className="font-medium text-gray-900 text-lg">
                           {feature.title}
                         </h3>
                         <CheckCircle2 className="h-5 w-5 text-green-500 ml-2 flex-shrink-0" />

@@ -71,7 +71,7 @@ export function Footer() {
             {/* Links Sections */}
             {Object.entries(footerLinks).map(([category, links]) => (
               <div key={category}>
-                <h3 className="font-semibold text-white mb-4">{category}</h3>
+                <h3 className="font-medium text-white mb-4">{category}</h3>
                 <ul className="space-y-3">
                   {links.map((link) => (
                     <li key={link.name}>
@@ -92,7 +92,7 @@ export function Footer() {
         {/* Newsletter Section */}
         <div className="py-8 border-t border-gray-800">
           <div className="max-w-md">
-            <h3 className="font-semibold text-white mb-2">Stay updated</h3>
+            <h3 className="font-medium text-white mb-2">Stay updated</h3>
             <p className="text-gray-400 text-sm mb-4">
               Get the latest updates on new features and tips for better marketing.
             </p>

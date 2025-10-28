@@ -160,7 +160,7 @@ export function CompetitiveEdge() {
                   <Star className="h-6 w-6 text-white" />
                 </div>
                 <div className="text-left">
-                  <h4 className="font-semibold text-gray-900">The only platform that does both</h4>
+                  <h4 className="font-medium text-gray-900">The only platform that does both</h4>
                   <p className="text-sm text-gray-600">Customer clarity + campaign templates in one place</p>
                 </div>
               </div>

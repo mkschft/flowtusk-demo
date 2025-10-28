@@ -72,7 +72,7 @@ export function HowItWorks() {
                     </div>
                     
                     {/* Content */}
-                    <h3 className="font-semibold text-gray-900 mb-3 text-lg">
+                    <h3 className="font-medium text-gray-900 mb-3 text-lg">
                       {step.title}
                     </h3>
                     <p className="text-sm text-gray-600 leading-relaxed">

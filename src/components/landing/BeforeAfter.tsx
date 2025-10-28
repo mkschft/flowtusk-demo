@@ -49,7 +49,7 @@ export function BeforeAfter() {
                   <div className="p-8 bg-red-50 border-r border-red-200">
                     <div className="flex items-center mb-4">
                       <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
-                      <h3 className="font-semibold text-red-900">Before (Without Clarity)</h3>
+                      <h3 className="font-medium text-red-900">Before (Without Clarity)</h3>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-red-200 mb-4">
                       <p className="text-gray-700 italic">&ldquo;{example.before}&rdquo;</p>
@@ -64,7 +64,7 @@ export function BeforeAfter() {
                   <div className="p-8 bg-green-50">
                     <div className="flex items-center mb-4">
                       <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
-                      <h3 className="font-semibold text-green-900">After (With Flowtusk)</h3>
+                      <h3 className="font-medium text-green-900">After (With Flowtusk)</h3>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-green-200 mb-4">
                       <p className="text-gray-700 font-medium">&ldquo;{example.after}&rdquo;</p>

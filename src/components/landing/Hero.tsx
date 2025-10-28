@@ -89,7 +89,7 @@ export function Hero() {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center mb-3">
                 <Globe className="h-6 w-6 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1 text-sm">1. Paste URL</h3>
+              <h3 className="font-medium text-gray-900 mb-1 text-sm">1. Paste URL</h3>
               <p className="text-xs text-gray-600">Analyze your content and messaging</p>
             </div>
 
@@ -97,7 +97,7 @@ export function Hero() {
               <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center mb-3">
                 <Brain className="h-6 w-6 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1 text-sm">2. Get Personas</h3>
+              <h3 className="font-medium text-gray-900 mb-1 text-sm">2. Get Personas</h3>
               <p className="text-xs text-gray-600">AI generates customer profiles</p>
             </div>
 
@@ -105,7 +105,7 @@ export function Hero() {
               <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center mb-3">
                 <FileText className="h-6 w-6 text-green-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1 text-sm">3. Export Templates</h3>
+              <h3 className="font-medium text-gray-900 mb-1 text-sm">3. Export Templates</h3>
               <p className="text-xs text-gray-600">Download ready-to-use content</p>
             </div>
           </div>

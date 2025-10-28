@@ -67,7 +67,7 @@ export function Testimonials() {
                     </div>
                   </Avatar>
                   <div>
-                    <div className="font-semibold text-gray-900">{testimonial.author}</div>
+                    <div className="font-medium text-gray-900">{testimonial.author}</div>
                     <div className="text-sm text-gray-600">{testimonial.company}</div>
                   </div>
                 </div>
