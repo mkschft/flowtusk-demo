@@ -70,6 +70,7 @@ type PersonaShowcaseProps = {
   valuePropData: Record<string, ValuePropData>;
   onPersonaChange?: (personaId: string) => void;
   onExport?: (format: string, data: { personas: ICP[]; valuePropData: Record<string, ValuePropData> }) => void;
+  onContinue?: (persona: ICP) => void;
   readOnly?: boolean;
 };
 
@@ -79,6 +80,7 @@ export function PersonaShowcase({
   valuePropData,
   onPersonaChange,
   onExport,
+  onContinue,
   readOnly = false
 }: PersonaShowcaseProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -486,6 +488,24 @@ export function PersonaShowcase({
           })}
         </div>
       </div>
+
+      {/* Continue to Email Button */}
+      {onContinue && !readOnly && (
+        <div className="px-4 pb-4">
+          <Button
+            onClick={() => {
+              const selectedPersona = personas.find(p => p.id === selectedPersonaId);
+              if (selectedPersona) {
+                onContinue(selectedPersona);
+              }
+            }}
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+            size="lg"
+          >
+            Continue to Email Sequence →
+          </Button>
+        </div>
+      )}
 
       {/* Navigation dots */}
       {personas.length > 1 && (

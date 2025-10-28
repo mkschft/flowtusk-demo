@@ -13,6 +13,11 @@ import { type ExportFormat } from "@/components/ExportOptions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SystemMessage } from "@/components/ui/system-message";
 import { SummaryApprovalCard } from "@/components/SummaryApprovalCard";
+import { EmailTypeChoice } from "@/components/EmailTypeChoice";
+import { SequenceLengthChoice } from "@/components/SequenceLengthChoice";
+import { EmailSequenceCard } from "@/components/EmailSequenceCard";
+import { OneTimeEmailCard } from "@/components/OneTimeEmailCard";
+import { LinkedInOutreachCard } from "@/components/LinkedInOutreachCard";
 import { nanoid } from "nanoid";
 
 type ICP = {
@@ -91,12 +96,65 @@ type ValuePropData = {
   };
 };
 
+type EmailMessage = {
+  id: string;
+  step: number;
+  type: 'intro' | 'value' | 'social-proof' | 'urgency' | 'breakup' | 'nurture' | 'final-ask';
+  dayNumber: number;
+  subjectLines: string[];
+  body: string;
+  cta: string;
+  openRateBenchmark: string;
+  replyRateBenchmark: string;
+  tips: string[];
+};
+
+type EmailSequenceData = {
+  emails: EmailMessage[];
+  sequenceGoal: string;
+  bestPractices: string[];
+  expectedOutcome: string;
+  summary?: {
+    sequenceGoal: string;
+    timeline: string;
+    expectedResults: string;
+  };
+};
+
+type OneTimeEmailData = {
+  subjectLines: string[];
+  body: string;
+  cta: string;
+  openRateBenchmark: string;
+  replyRateBenchmark: string;
+  conversionBenchmark: string;
+  tips: string[];
+};
+
+type LinkedInMessage = {
+  id: string;
+  step: number;
+  type: 'connection' | 'follow-up-1' | 'follow-up-2';
+  title: string;
+  timing: string;
+  characterCount: number;
+  message: string;
+  personalizationTips: string[];
+  expectedResponse: string;
+};
+
+type LinkedInOutreachData = {
+  overallStrategy: string;
+  messages: LinkedInMessage[];
+  keyTakeaways: string[];
+};
+
 
 type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  component?: "icps" | "value-prop" | "persona-showcase" | "export-options" | "value-prop-summary" | "positioning-summary" | "landing-preview";
+  component?: "icps" | "value-prop" | "persona-showcase" | "export-options" | "value-prop-summary" | "positioning-summary" | "landing-preview" | "email-strategy-summary" | "email-type-choice" | "sequence-length-choice" | "email-sequence" | "one-time-email" | "linkedin-outreach" | "email-sequence-summary";
   data?: ICP[] | ValuePropData | Record<string, unknown>;
   thinking?: ThinkingStep[];
 };
@@ -108,8 +166,9 @@ type GeneratedContent = {
   icps?: ICP[];
   valueProp?: ValuePropData;
   funnelSummary?: Record<string, unknown>;
-  emailSequence?: Record<string, unknown>;
-  linkedinOutreach?: Record<string, unknown>;
+  emailSequence?: EmailSequenceData;
+  oneTimeEmail?: OneTimeEmailData;
+  linkedinOutreach?: LinkedInOutreachData;
 };
 
 type GenerationState = {
@@ -339,6 +398,11 @@ class MemoryManager {
       'make-content-choice': ['funnel'],
       'email': ['make-content-choice'],
       'linkedin': ['make-content-choice'],
+      'show-email-choice': ['approve-positioning-summary'], // Email flow starts after positioning
+      'choose-email-type': ['show-email-choice'],
+      'generate-one-time-email': ['choose-email-type'],
+      'generate-email-sequence': ['choose-email-type'],
+      'generate-linkedin-outreach': ['choose-email-type'],
     };
 
     const required = dependencies[action] || [];
@@ -1301,6 +1365,330 @@ This is your go-to resource for all messaging, marketing, and sales targeting **
     }, 1000);
   };
 
+  // Email sequence handlers
+  const handleContinueToEmail = (icp: ICP) => {
+    // Show email strategy summary message
+    const emailStrategyText = `Now let's create your outreach strategy for **${icp.title}**.
+
+**Available Options:**
+• **Single Email** – Perfect for announcements or quick outreach
+• **Email Sequence** – 5, 7, or 10-day nurture flow that builds relationships over time
+
+Which approach would you like to use?`;
+
+    addMessage({
+      id: nanoid(),
+      role: "assistant",
+      content: emailStrategyText
+    });
+
+    // Show email type choice card
+    setTimeout(() => {
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "",
+        component: "email-type-choice",
+        data: { icp }
+      });
+    }, 500);
+
+    memoryManager.addGenerationRecord(activeConversationId, 'show-email-choice', { icpId: icp.id } as Record<string, unknown>);
+  };
+
+  const handleEmailTypeChoice = async (type: 'one-time' | 'sequence', icp: ICP) => {
+    if (type === 'one-time') {
+      // Generate single email immediately
+      addMessage({
+        id: nanoid(),
+        role: "user",
+        content: `Generate a single email for ${icp.title}`
+      });
+
+      // Create thinking message
+      const thinkingMsgId = nanoid();
+      addMessage({
+        id: thinkingMsgId,
+        role: "assistant",
+        content: "thinking",
+        thinking: [
+          { id: 'analyze', label: 'Analyzing persona insights', status: 'pending' },
+          { id: 'craft', label: 'Crafting email copy', status: 'pending' },
+          { id: 'subjects', label: 'Creating A/B/C subject lines', status: 'pending' },
+        ],
+      });
+
+      updateGenerationState({ isGenerating: true, currentStep: 'one-time-email' });
+
+      try {
+        // Start generation tracking
+        generationManager.startGeneration('one-time-email', { icp: icp.id });
+
+        // Update thinking steps
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === activeConversationId
+              ? {
+                  ...conv,
+                  messages: conv.messages.map(m =>
+                    m.id === thinkingMsgId
+                      ? {
+                          ...m,
+                          thinking: m.thinking?.map(t =>
+                            t.id === 'analyze' ? { ...t, status: 'completed' as const } : t
+                          ),
+                        }
+                      : m
+                  ),
+                }
+              : conv
+          )
+        );
+
+        const response = await fetch('/api/generate-one-time-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ icp, websiteUrl, valueProp: activeConversation?.generationState.generatedContent.valueProp })
+        });
+
+        const data: OneTimeEmailData = await response.json();
+
+        // Complete thinking steps
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === activeConversationId
+              ? {
+                  ...conv,
+                  messages: conv.messages.map(m =>
+                    m.id === thinkingMsgId
+                      ? {
+                          ...m,
+                          thinking: m.thinking?.map(t => ({ ...t, status: 'completed' as const })),
+                        }
+                      : m
+                  ),
+                }
+              : conv
+          )
+        );
+
+        // Remove thinking message
+        setTimeout(() => {
+          setConversations(prev =>
+            prev.map(conv =>
+              conv.id === activeConversationId
+                ? { ...conv, messages: conv.messages.filter(m => m.id !== thinkingMsgId) }
+                : conv
+            )
+          );
+
+          // Show result
+          addMessage({
+            id: nanoid(),
+            role: "assistant",
+            content: `Here's your one-time email for **${icp.title}** with 3 subject line variations ready for A/B testing.`,
+            component: "one-time-email",
+            data: { email: data, icp }
+          });
+
+          // Update generation state
+          updateGenerationState({
+            isGenerating: false,
+            generatedContent: {
+              ...activeConversation?.generationState.generatedContent,
+              oneTimeEmail: data
+            }
+          });
+
+          generationManager.completeGeneration('one-time-email', { icp: icp.id }, data as Record<string, unknown>);
+          memoryManager.addGenerationRecord(activeConversationId, 'generate-one-time-email', { icpId: icp.id, data } as Record<string, unknown>);
+        }, 800);
+      } catch (error) {
+        console.error('Error generating one-time email:', error);
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === activeConversationId
+              ? { ...conv, messages: conv.messages.filter(m => m.id !== thinkingMsgId) }
+              : conv
+          )
+        );
+        addMessage({
+          id: nanoid(),
+          role: "assistant",
+          content: "Sorry, there was an error generating the email. Please try again."
+        });
+        updateGenerationState({ isGenerating: false });
+      }
+    } else {
+      // Show sequence length choice
+      addMessage({
+        id: nanoid(),
+        role: "user",
+        content: `I want to create an email sequence for ${icp.title}`
+      });
+
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "Perfect! Email sequences are great for building relationships. Let's choose the length:",
+        component: "sequence-length-choice",
+        data: { icp }
+      });
+
+      memoryManager.addGenerationRecord(activeConversationId, 'choose-email-type', { type: 'sequence', icpId: icp.id } as Record<string, unknown>);
+    }
+  };
+
+  const handleSequenceLengthChoice = async (days: 5 | 7 | 10, icp: ICP) => {
+    addMessage({
+      id: nanoid(),
+      role: "user",
+      content: `Generate a ${days}-day email sequence for ${icp.title}`
+    });
+
+    // Create thinking message
+    const thinkingMsgId = nanoid();
+    addMessage({
+      id: thinkingMsgId,
+      role: "assistant",
+      content: "thinking",
+      thinking: [
+        { id: 'analyze', label: 'Analyzing persona journey', status: 'pending' },
+        { id: 'sequence', label: `Planning ${days}-day sequence`, status: 'pending' },
+        { id: 'emails', label: `Crafting ${days} emails with variations`, status: 'pending' },
+        { id: 'timeline', label: 'Building visual timeline', status: 'pending' },
+      ],
+    });
+
+    updateGenerationState({ isGenerating: true, currentStep: 'email-sequence' });
+
+    try {
+      // Start generation tracking
+      generationManager.startGeneration('email-sequence', { icp: icp.id, days });
+
+      // Update thinking steps progressively
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === activeConversationId
+            ? {
+                ...conv,
+                messages: conv.messages.map(m =>
+                  m.id === thinkingMsgId
+                    ? {
+                        ...m,
+                        thinking: m.thinking?.map(t =>
+                          t.id === 'analyze' ? { ...t, status: 'completed' as const } : t
+                        ),
+                      }
+                    : m
+                ),
+              }
+            : conv
+        )
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === activeConversationId
+            ? {
+                ...conv,
+                messages: conv.messages.map(m =>
+                  m.id === thinkingMsgId
+                    ? {
+                        ...m,
+                        thinking: m.thinking?.map(t =>
+                          t.id === 'sequence' ? { ...t, status: 'completed' as const } : t
+                        ),
+                      }
+                    : m
+                ),
+              }
+            : conv
+        )
+      );
+
+      const response = await fetch('/api/generate-email-sequence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          icp,
+          websiteUrl,
+          valueProp: activeConversation?.generationState.generatedContent.valueProp,
+          sequenceLength: days
+        })
+      });
+
+      const data: EmailSequenceData = await response.json();
+
+      // Complete thinking steps
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === activeConversationId
+            ? {
+                ...conv,
+                messages: conv.messages.map(m =>
+                  m.id === thinkingMsgId
+                    ? {
+                        ...m,
+                        thinking: m.thinking?.map(t => ({ ...t, status: 'completed' as const })),
+                      }
+                    : m
+                ),
+              }
+            : conv
+        )
+      );
+
+      // Remove thinking message and show result
+      setTimeout(() => {
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === activeConversationId
+              ? { ...conv, messages: conv.messages.filter(m => m.id !== thinkingMsgId) }
+              : conv
+          )
+        );
+
+        addMessage({
+          id: nanoid(),
+          role: "assistant",
+          content: `Here's your complete ${days}-day email sequence for **${icp.title}** with a visual timeline and personalization tips for each email.`,
+          component: "email-sequence",
+          data: { sequence: data, icp, days }
+        });
+
+        // Update generation state
+        updateGenerationState({
+          isGenerating: false,
+          generatedContent: {
+            ...activeConversation?.generationState.generatedContent,
+            emailSequence: data
+          }
+        });
+
+        generationManager.completeGeneration('email-sequence', { icp: icp.id, days }, data as Record<string, unknown>);
+        memoryManager.addGenerationRecord(activeConversationId, 'generate-email-sequence', { icpId: icp.id, days, data } as Record<string, unknown>);
+      }, 1000);
+    } catch (error) {
+      console.error('Error generating email sequence:', error);
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === activeConversationId
+            ? { ...conv, messages: conv.messages.filter(m => m.id !== thinkingMsgId) }
+            : conv
+        )
+      );
+      addMessage({
+        id: nanoid(),
+        role: "assistant",
+        content: "Sorry, there was an error generating the email sequence. Please try again."
+      });
+      updateGenerationState({ isGenerating: false });
+    }
+  };
+
   const handleSelectIcp = async (icp: ICP) => {
     // Check if action is allowed
     if (!canPerformAction('select-icp')) {
@@ -1907,7 +2295,61 @@ ${summary.painPointsAddressed.map((p: string, i: number) => `${i + 1}. ${p}`).jo
                             );
                           }}
                           onExport={handleExport}
+                          onContinue={(persona) => handleContinueToEmail(persona)}
                           readOnly={false}
+                        />
+                      );
+                    })()}
+
+                    {/* Email Type Choice */}
+                    {message.component === "email-type-choice" && message.data && (() => {
+                      const data = message.data as { icp: ICP };
+                      return (
+                        <EmailTypeChoice
+                          onSelect={(type) => handleEmailTypeChoice(type, data.icp)}
+                        />
+                      );
+                    })()}
+
+                    {/* Sequence Length Choice */}
+                    {message.component === "sequence-length-choice" && message.data && (() => {
+                      const data = message.data as { icp: ICP };
+                      return (
+                        <SequenceLengthChoice
+                          onSelect={(days) => handleSequenceLengthChoice(days, data.icp)}
+                        />
+                      );
+                    })()}
+
+                    {/* Email Sequence */}
+                    {message.component === "email-sequence" && message.data && (() => {
+                      const data = message.data as { sequence: EmailSequenceData; icp: ICP; days: number };
+                      return (
+                        <EmailSequenceCard
+                          data={data.sequence}
+                          personaTitle={data.icp.title}
+                        />
+                      );
+                    })()}
+
+                    {/* One-Time Email */}
+                    {message.component === "one-time-email" && message.data && (() => {
+                      const data = message.data as { email: OneTimeEmailData; icp: ICP };
+                      return (
+                        <OneTimeEmailCard
+                          data={data.email}
+                          personaTitle={data.icp.title}
+                        />
+                      );
+                    })()}
+
+                    {/* LinkedIn Outreach */}
+                    {message.component === "linkedin-outreach" && message.data && (() => {
+                      const data = message.data as { outreach: LinkedInOutreachData; icp: ICP };
+                      return (
+                        <LinkedInOutreachCard
+                          data={data.outreach}
+                          personaTitle={data.icp.title}
                         />
                       );
                     })()}
