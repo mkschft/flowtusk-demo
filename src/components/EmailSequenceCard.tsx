@@ -19,7 +19,7 @@ import {
 type EmailMessage = {
   id: string;
   step: number;
-  type: 'intro' | 'value' | 'social-proof' | 'urgency' | 'breakup';
+  type: 'intro' | 'value' | 'social-proof' | 'urgency' | 'breakup' | 'nurture' | 'final-ask';
   dayNumber: number;
   subjectLines: string[];
   body: string;
@@ -57,7 +57,9 @@ export function EmailSequenceCard({ data, personaTitle }: EmailSequenceCardProps
     value: { gradient: 'from-purple-500 to-indigo-500', bg: 'bg-purple-100 dark:bg-purple-950', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-300 dark:border-purple-700' },
     'social-proof': { gradient: 'from-pink-500 to-rose-500', bg: 'bg-pink-100 dark:bg-pink-950', text: 'text-pink-700 dark:text-pink-300', border: 'border-pink-300 dark:border-pink-700' },
     urgency: { gradient: 'from-orange-500 to-red-500', bg: 'bg-orange-100 dark:bg-orange-950', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-300 dark:border-orange-700' },
-    breakup: { gradient: 'from-gray-500 to-slate-500', bg: 'bg-gray-100 dark:bg-gray-950', text: 'text-gray-700 dark:text-gray-300', border: 'border-gray-300 dark:border-gray-700' }
+    breakup: { gradient: 'from-gray-500 to-slate-500', bg: 'bg-gray-100 dark:bg-gray-950', text: 'text-gray-700 dark:text-gray-300', border: 'border-gray-300 dark:border-gray-700' },
+    nurture: { gradient: 'from-green-500 to-emerald-500', bg: 'bg-green-100 dark:bg-green-950', text: 'text-green-700 dark:text-green-300', border: 'border-green-300 dark:border-green-700' },
+    'final-ask': { gradient: 'from-red-500 to-pink-500', bg: 'bg-red-100 dark:bg-red-950', text: 'text-red-700 dark:text-red-300', border: 'border-red-300 dark:border-red-700' }
   };
 
   const emailTypeLabels = {
@@ -65,7 +67,9 @@ export function EmailSequenceCard({ data, personaTitle }: EmailSequenceCardProps
     value: 'Value Prop',
     'social-proof': 'Social Proof',
     urgency: 'Urgency',
-    breakup: 'Break-up Email'
+    breakup: 'Break-up Email',
+    nurture: 'Nurture',
+    'final-ask': 'Final Ask'
   };
 
   const getFullEmail = (email: EmailMessage, subjectIdx: number = 0) => {

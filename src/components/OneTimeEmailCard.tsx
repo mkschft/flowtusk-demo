@@ -16,19 +16,13 @@ import {
 } from "lucide-react";
 
 type OneTimeEmailData = {
-  subjectLines: {
-    A: string;
-    B: string;
-    C: string;
-  };
-  emailBody: string;
+  subjectLines: string[];
+  body: string;
   cta: string;
+  openRateBenchmark: string;
+  replyRateBenchmark: string;
+  conversionBenchmark: string;
   tips: string[];
-  benchmarks: {
-    openRate: string;
-    replyRate: string;
-    conversionRate: string;
-  };
 };
 
 type OneTimeEmailCardProps = {
@@ -56,10 +50,10 @@ export function OneTimeEmailCard({ data, personaTitle }: OneTimeEmailCardProps) 
   };
 
   const exportToCSV = () => {
-    const csvContent = `Subject Line A,${data.subjectLines.A}
-Subject Line B,${data.subjectLines.B}
-Subject Line C,${data.subjectLines.C}
-Email Body,"${data.emailBody.replace(/"/g, '""')}"
+    const csvContent = `Subject Line A,${data.subjectLines[0] || ''}
+Subject Line B,${data.subjectLines[1] || ''}
+Subject Line C,${data.subjectLines[2] || ''}
+Email Body,"${data.body.replace(/"/g, '""')}"
 CTA,${data.cta}`;
     
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -104,10 +98,10 @@ CTA,${data.cta}`;
             Subject Line Variations (A/B/C Test)
           </h4>
           <div className="grid gap-3">
-            {Object.entries(data.subjectLines).map(([variant, subject]) => (
-              <div key={variant} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+            {data.subjectLines.map((subject, index) => (
+              <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
                 <Badge variant="outline" className="w-8 h-8 flex items-center justify-center p-0">
-                  {variant}
+                  {String.fromCharCode(65 + index)}
                 </Badge>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{subject}</p>
@@ -141,16 +135,16 @@ CTA,${data.cta}`;
           <div className="p-4 rounded-lg bg-muted/30 border">
             <div className="prose prose-sm max-w-none">
               <p className="text-sm leading-relaxed whitespace-pre-wrap mb-4">
-                {data.emailBody}
+                {data.body}
               </p>
               <div className="flex items-center justify-between pt-3 border-t">
                 <div className="text-xs text-muted-foreground">
-                  {data.emailBody.split(' ').length} words
+                  {data.body.split(' ').length} words
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => copyToClipboard(data.emailBody, 'body')}
+                  onClick={() => copyToClipboard(data.body, 'body')}
                   className="h-8"
                 >
                   {copiedBody ? (
@@ -186,15 +180,15 @@ CTA,${data.cta}`;
           </h4>
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center p-3 rounded-lg bg-muted/30">
-              <div className="text-lg font-bold text-blue-600">{data.benchmarks.openRate}</div>
+              <div className="text-lg font-bold text-blue-600">{data.openRateBenchmark}</div>
               <div className="text-xs text-muted-foreground">Open Rate</div>
             </div>
             <div className="text-center p-3 rounded-lg bg-muted/30">
-              <div className="text-lg font-bold text-green-600">{data.benchmarks.replyRate}</div>
+              <div className="text-lg font-bold text-green-600">{data.replyRateBenchmark}</div>
               <div className="text-xs text-muted-foreground">Reply Rate</div>
             </div>
             <div className="text-center p-3 rounded-lg bg-muted/30">
-              <div className="text-lg font-bold text-purple-600">{data.benchmarks.conversionRate}</div>
+              <div className="text-lg font-bold text-purple-600">{data.conversionBenchmark}</div>
               <div className="text-xs text-muted-foreground">Conversion</div>
             </div>
           </div>

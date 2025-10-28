@@ -160,7 +160,7 @@ type ChatMessage = {
 };
 
 // Enhanced Generation State Types
-type GenerationStep = 'analysis' | 'icp-selection' | 'value-prop' | 'export' | 'complete';
+type GenerationStep = 'analysis' | 'icp-selection' | 'value-prop' | 'export' | 'one-time-email' | 'email-sequence' | 'complete';
 
 type GeneratedContent = {
   icps?: ICP[];
@@ -1432,9 +1432,6 @@ Which approach would you like to use?`;
       updateGenerationState({ isGenerating: true, currentStep: 'one-time-email' });
 
       try {
-        // Start generation tracking
-        generationManager.startGeneration('one-time-email', { icp: icp.id });
-
         // Update thinking steps
         setConversations(prev =>
           prev.map(conv =>
@@ -1446,7 +1443,7 @@ Which approach would you like to use?`;
                       ? {
                           ...m,
                           thinking: m.thinking?.map(t =>
-                            t.id === 'analyze' ? { ...t, status: 'completed' as const } : t
+                            t.id === 'analyze' ? { ...t, status: 'complete' as const } : t
                           ),
                         }
                       : m
@@ -1456,13 +1453,19 @@ Which approach would you like to use?`;
           )
         );
 
-        const response = await fetch('/api/generate-one-time-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ icp, websiteUrl, valueProp: activeConversation?.generationState.generatedContent.valueProp })
-        });
-
-        const data: OneTimeEmailData = await response.json();
+        // Use generationManager.generate() to handle caching and tracking
+        const data = await generationManager.generate<OneTimeEmailData>(
+          'one-time-email',
+          { icp: icp.id },
+          async () => {
+            const response = await fetch('/api/generate-one-time-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ icp, websiteUrl, valueProp: activeConversation?.generationState.generatedContent.valueProp })
+            });
+            return await response.json();
+          }
+        );
 
         // Complete thinking steps
         setConversations(prev =>
@@ -1474,7 +1477,7 @@ Which approach would you like to use?`;
                     m.id === thinkingMsgId
                       ? {
                           ...m,
-                          thinking: m.thinking?.map(t => ({ ...t, status: 'completed' as const })),
+                          thinking: m.thinking?.map(t => ({ ...t, status: 'complete' as const })),
                         }
                       : m
                   ),
@@ -1511,7 +1514,7 @@ Which approach would you like to use?`;
             }
           });
 
-          generationManager.completeGeneration('one-time-email', { icp: icp.id }, data as Record<string, unknown>);
+          // Record generation in memory (generationManager already tracked it via generate())
           memoryManager.addGenerationRecord(activeConversationId, 'generate-one-time-email', { icpId: icp.id, data } as Record<string, unknown>);
         }, 800);
       } catch (error) {
@@ -1574,9 +1577,6 @@ Which approach would you like to use?`;
     updateGenerationState({ isGenerating: true, currentStep: 'email-sequence' });
 
     try {
-      // Start generation tracking
-      generationManager.startGeneration('email-sequence', { icp: icp.id, days });
-
       // Update thinking steps progressively
       setConversations(prev =>
         prev.map(conv =>
@@ -1588,7 +1588,7 @@ Which approach would you like to use?`;
                     ? {
                         ...m,
                         thinking: m.thinking?.map(t =>
-                          t.id === 'analyze' ? { ...t, status: 'completed' as const } : t
+                          t.id === 'analyze' ? { ...t, status: 'complete' as const } : t
                         ),
                       }
                     : m
@@ -1609,9 +1609,9 @@ Which approach would you like to use?`;
                   m.id === thinkingMsgId
                     ? {
                         ...m,
-                        thinking: m.thinking?.map(t =>
-                          t.id === 'sequence' ? { ...t, status: 'completed' as const } : t
-                        ),
+                          thinking: m.thinking?.map(t =>
+                            t.id === 'sequence' ? { ...t, status: 'complete' as const } : t
+                          ),
                       }
                     : m
                 ),
@@ -1620,18 +1620,24 @@ Which approach would you like to use?`;
         )
       );
 
-      const response = await fetch('/api/generate-email-sequence', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          icp,
-          websiteUrl,
-          valueProp: activeConversation?.generationState.generatedContent.valueProp,
-          sequenceLength: days
-        })
-      });
-
-      const data: EmailSequenceData = await response.json();
+      // Use generationManager.generate() to handle caching and tracking
+      const data = await generationManager.generate<EmailSequenceData>(
+        'email-sequence',
+        { icp: icp.id, days },
+        async () => {
+          const response = await fetch('/api/generate-email-sequence', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              icp,
+              websiteUrl,
+              valueProp: activeConversation?.generationState.generatedContent.valueProp,
+              sequenceLength: days
+            })
+          });
+          return await response.json();
+        }
+      );
 
       // Complete thinking steps
       setConversations(prev =>
@@ -1643,7 +1649,7 @@ Which approach would you like to use?`;
                   m.id === thinkingMsgId
                     ? {
                         ...m,
-                        thinking: m.thinking?.map(t => ({ ...t, status: 'completed' as const })),
+                        thinking: m.thinking?.map(t => ({ ...t, status: 'complete' as const })),
                       }
                     : m
                 ),
@@ -1679,7 +1685,7 @@ Which approach would you like to use?`;
           }
         });
 
-        generationManager.completeGeneration('email-sequence', { icp: icp.id, days }, data as Record<string, unknown>);
+        // Record generation in memory (generationManager already tracked it via generate())
         memoryManager.addGenerationRecord(activeConversationId, 'generate-email-sequence', { icpId: icp.id, days, data } as Record<string, unknown>);
       }, 1000);
     } catch (error) {
