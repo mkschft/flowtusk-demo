@@ -20,7 +20,7 @@ import {
   Check, 
   RefreshCw
 } from "lucide-react";
-import { SmartButton } from "@/app/page";
+import { SmartButton } from "@/app/app/page";
 
 type ValuePropVariable = {
   key: string;
