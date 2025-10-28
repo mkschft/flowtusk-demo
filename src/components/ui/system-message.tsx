@@ -1,8 +1,7 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { AlertCircle, AlertTriangle, Info, Loader2 } from "lucide-react"
+import { Info, Loader2 } from "lucide-react"
 import React from "react"
 
 export type SystemMessageProps = React.ComponentProps<"div"> & {

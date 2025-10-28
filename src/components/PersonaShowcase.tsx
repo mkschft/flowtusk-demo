@@ -101,10 +101,10 @@ export function PersonaShowcase({
       try {
         const html2canvas = (await import('html2canvas')).default;
         const canvas = await html2canvas(cardRef.current, {
-          backgroundColor: '#ffffff',
-          scale: 2, // 2x for high quality
+          background: '#ffffff',
           logging: false,
-          useCORS: true, // For external images
+          useCORS: true,
+          allowTaint: true
         });
 
         canvas.toBlob((blob) => {

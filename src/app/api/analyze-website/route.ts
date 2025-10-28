@@ -27,9 +27,9 @@ export async function POST(req: NextRequest) {
         },
       });
       
-      console.log('✅ [Analyze] Firecrawl complete, pages:', crawlResult.data?.length || 0);
+      console.log('✅ [Analyze] Firecrawl complete, pages:', 'data' in crawlResult ? crawlResult.data?.length || 0 : 0);
 
-      if (crawlResult.success) {
+      if (crawlResult.success && 'data' in crawlResult) {
         // Combine all pages into one markdown
         let fullMarkdown = `# Website Crawl: ${url}\n\n`;
         

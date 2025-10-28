@@ -6,7 +6,12 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: NextRequest) {
-  const { messages, landingPage, websiteUrl, icp } = await req.json();
+  const { messages, landingPage, websiteUrl, icp } = await req.json() as {
+    messages: Array<{ role: "user" | "assistant" | "system"; content: string }>;
+    landingPage?: Record<string, unknown>;
+    websiteUrl?: string;
+    icp?: Record<string, unknown>;
+  };
 
   const systemPrompt = `You are an expert landing page designer helping refine a landing page for ${icp?.title || "a target audience"}.
 
@@ -14,7 +19,7 @@ Current landing page:
 - Headline: ${landingPage?.headline || "None"}
 - Subheadline: ${landingPage?.subheadline || "None"}
 - CTA: ${landingPage?.cta || "None"}
-- Features: ${landingPage?.features?.map((f: any) => f.title).join(", ") || "None"}
+- Features: ${Array.isArray(landingPage?.features) ? landingPage.features.map((f: Record<string, unknown>) => f.title).join(", ") : "None"}
 - Website: ${websiteUrl}
 
 When the user asks to make changes, respond with a JSON object containing the updates. Format:

@@ -83,6 +83,12 @@ type ValuePropData = {
   variables: ValuePropVariable[];
   variations: ValuePropVariation[];
   icp: ICP;
+  summary?: {
+    approachStrategy: string;
+    expectedImpact: string;
+    mainInsight: string;
+    painPointsAddressed: string[];
+  };
 };
 
 
@@ -90,7 +96,7 @@ type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  component?: "icps" | "value-prop" | "persona-showcase" | "export-options" | "value-prop-summary" | "positioning-summary";
+  component?: "icps" | "value-prop" | "persona-showcase" | "export-options" | "value-prop-summary" | "positioning-summary" | "landing-preview";
   data?: ICP[] | ValuePropData | Record<string, unknown>;
   thinking?: ThinkingStep[];
 };
@@ -102,8 +108,8 @@ type GeneratedContent = {
   icps?: ICP[];
   valueProp?: ValuePropData;
   funnelSummary?: Record<string, unknown>;
-  emailSequence?: EmailSequenceData;
-  linkedinOutreach?: LinkedInOutreachData;
+  emailSequence?: Record<string, unknown>;
+  linkedinOutreach?: Record<string, unknown>;
 };
 
 type GenerationState = {
@@ -169,19 +175,19 @@ class GenerationManager {
     // Check cache first
     if (this.cache.has(key)) {
       console.log(`🎯 [GenerationManager] Cache hit for ${type}`);
-      return this.cache.get(key);
+      return this.cache.get(key) as T;
     }
 
     // Check if already generating
     if (this.pendingGenerations.has(key)) {
       console.log(`⏳ [GenerationManager] Waiting for existing generation: ${type}`);
-      return this.pendingGenerations.get(key);
+      return this.pendingGenerations.get(key) as Promise<T>;
     }
 
     // Check if already completed
     if (this.completedGenerations.has(key)) {
       console.log(`✅ [GenerationManager] Already completed: ${type}`);
-      return this.cache.get(key);
+      return this.cache.get(key) as T;
     }
 
     // Start generation
@@ -269,9 +275,11 @@ class MemoryManager {
 
   updateMemory(conversationId: string, updates: Partial<ConversationMemory>): void {
     const current = this.getMemory(conversationId);
-    const updated = { ...current, ...updates };
-    this.memories.set(conversationId, updated);
-    this.saveToStorage();
+    if (current) {
+      const updated = { ...current, ...updates };
+      this.memories.set(conversationId, updated);
+      this.saveToStorage();
+    }
   }
 
   addGenerationRecord(conversationId: string, action: string, result: Record<string, unknown>, success: boolean = true): void {
@@ -967,6 +975,30 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
         title: "New conversation",
         messages: [],
         createdAt: new Date(),
+        generationState: {
+          currentStep: 'analysis',
+          completedSteps: [],
+          generatedContent: {},
+          isGenerating: false,
+          generationId: undefined,
+          lastGenerationTime: undefined,
+        },
+        userJourney: {
+          websiteAnalyzed: false,
+          icpSelected: false,
+          valuePropGenerated: false,
+          exported: false,
+        },
+        memory: {
+          id: nanoid(),
+          websiteUrl: "",
+          selectedIcp: null,
+          generationHistory: [],
+          userPreferences: {
+            preferredContentType: "",
+            lastAction: "",
+          },
+        },
       };
       setConversations(prev => [newConv, ...prev]);
       setActiveConversationId(newConv.id);
@@ -1171,8 +1203,8 @@ I've identified **${icps.length} ideal customer profiles** below. Select one to 
 **What We Created:**
 • ${valuePropData.variations.length} different messaging styles (${valuePropData.variations.map(v => v.style).join(', ')})
 • Customized for ${icp.personaRole} in ${icp.personaCompany}
-• Strategy: ${valuePropData.summary.approachStrategy}
-• Expected impact: ${valuePropData.summary.expectedImpact}
+• Strategy: ${valuePropData.summary?.approachStrategy || 'Strategic positioning'}
+• Expected impact: ${valuePropData.summary?.expectedImpact || 'Improved conversion'}
 
 Now let me prepare your complete positioning package...`;
 
@@ -1191,13 +1223,13 @@ Now let me prepare your complete positioning package...`;
 • ${icp.location}, ${icp.country}
 
 **Value Proposition Strategy:**
-${valuePropData.summary.approachStrategy}
+${valuePropData.summary?.approachStrategy || 'Strategic positioning'}
 
 **Why This Positioning Works:**
-${valuePropData.summary.mainInsight}
+${valuePropData.summary?.mainInsight || 'Targeted messaging approach'}
 
 **Impact You Can Expect:**
-${valuePropData.summary.expectedImpact}
+${valuePropData.summary?.expectedImpact || 'Improved conversion rates'}
 
 Ready to see your complete positioning package?`;
 
@@ -1433,7 +1465,7 @@ ${summary.painPointsAddressed.map((p: string, i: number) => `${i + 1}. ${p}`).jo
         role: "assistant",
         content: "Sorry, something went wrong generating the value proposition. Please try again.",
       });
-      memoryManager.addGenerationRecord(activeConversationId, 'value-prop', null, false);
+      memoryManager.addGenerationRecord(activeConversationId, 'value-prop', { error: true }, false);
     } finally {
       updateGenerationState({ 
         isGenerating: false, 
@@ -1442,15 +1474,20 @@ ${summary.painPointsAddressed.map((p: string, i: number) => `${i + 1}. ${p}`).jo
     }
   };
 
-  const handleExport = async (format: ExportFormat, data: { personas: ICP[]; valuePropData: Record<string, ValuePropData>; websiteUrl: string }) => {
+  const handleExport = async (format: string, data: { personas: ICP[]; valuePropData: Record<string, ValuePropData> }) => {
     console.log('🚀 [handleExport] Starting export for format:', format);
     setIsLoading(true);
     
     try {
+      const exportData = {
+        ...data,
+        websiteUrl: activeConversation?.memory.websiteUrl || ''
+      };
+      
       const response = await fetch(`/api/export/${format}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(exportData)
       });
       
       if (!response.ok) throw new Error(`Export failed: ${format}`);

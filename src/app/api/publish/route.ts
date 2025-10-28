@@ -27,6 +27,10 @@ export async function POST(req: NextRequest) {
 
     const slug = nanoid(8);
 
+    if (!supabaseAdmin) {
+      throw new Error("Supabase not configured");
+    }
+
     const { data, error } = await supabaseAdmin
       .from("landing_pages")
       .insert({

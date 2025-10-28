@@ -20,6 +20,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (!supabaseAdmin) {
+      throw new Error("Supabase not configured");
+    }
+
     // Insert lead
     const { error: leadError } = await supabaseAdmin.from("leads").insert({
       landing_page_id: landingPageId,

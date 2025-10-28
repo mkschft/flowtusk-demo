@@ -38,6 +38,12 @@ type ValuePropData = {
   variables: ValuePropVariable[];
   variations: ValuePropVariation[];
   icp: ICP;
+  summary?: {
+    approachStrategy: string;
+    expectedImpact: string;
+    mainInsight: string;
+    painPointsAddressed: string[];
+  };
 };
 
 type ValuePropBuilderWrapperProps = {
