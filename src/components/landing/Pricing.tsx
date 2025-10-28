@@ -65,15 +65,15 @@ export function Pricing() {
   ];
 
   return (
-    <section id="pricing" className="py-16 md:py-24 bg-white">
+    <section id="pricing" className="py-12 md:py-16 bg-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-4 leading-tight">
               Simple, Transparent Pricing
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
               Choose the plan that fits your needs. All plans include our core features. 
               No hidden fees, no surprises.
             </p>

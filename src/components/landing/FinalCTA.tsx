@@ -6,7 +6,7 @@ import { Sparkles, ArrowRight, Play } from "lucide-react";
 
 export function FinalCTA() {
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white relative overflow-hidden">
+    <section className="py-12 md:py-16 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-grid-pattern opacity-10" />
       <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
@@ -15,12 +15,12 @@ export function FinalCTA() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="max-w-4xl mx-auto text-center">
           {/* Main Headline */}
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-4 leading-tight">
             Ready to Know Your Customers?
           </h2>
 
           {/* Subheading */}
-          <p className="text-xl md:text-2xl mb-8 opacity-90 leading-relaxed">
+          <p className="text-lg md:text-xl mb-6 opacity-90 leading-relaxed">
             Get customer clarity + ready-to-use templates in 15 minutes. 
             No credit card required.
           </p>

@@ -17,7 +17,7 @@ export function Header() {
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
               <span className="text-white font-bold text-sm">F</span>
             </div>
-            <span className="font-bold text-xl">Flowtusk</span>
+            <span className="font-extrabold text-xl tracking-tight">Flowtusk</span>
           </Link>
 
           {/* Desktop Navigation */}

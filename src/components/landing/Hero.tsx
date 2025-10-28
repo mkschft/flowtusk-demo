@@ -33,7 +33,7 @@ export function Hero() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="max-w-4xl mx-auto text-center">
           {/* Main Headline */}
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-4 leading-tight tracking-tight">
             Find who you&apos;re selling to in{" "}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               minutes not weeks
@@ -41,7 +41,7 @@ export function Hero() {
           </h1>
 
           {/* Subheading */}
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg text-gray-600 mb-6 max-w-2xl mx-auto leading-relaxed">
             Paste your website URL. Get customer clarity. Export ready-to-use templates—emails, 
             landing pages, LinkedIn, pitch decks—rooted in real customer insights. All in 15 minutes.
           </p>
@@ -66,7 +66,7 @@ export function Hero() {
                 size="lg"
                 className="h-12 px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
               >
-                <Sparkles className="mr-2 h-5 w-5" />
+                <Sparkles className="mr-2 h-4 w-4" />
                 Vibe Create Your Funnel
               </Button>
             </div>
@@ -84,29 +84,29 @@ export function Hero() {
           </div>
 
           {/* 3-Step Process */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto">
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mb-4">
-                <Globe className="h-8 w-8 text-blue-600" />
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center mb-3">
+                <Globe className="h-6 w-6 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">1. Paste URL</h3>
-              <p className="text-sm text-gray-600">Enter your website and we&apos;ll analyze your content, messaging, and target audience</p>
+              <h3 className="font-semibold text-gray-900 mb-1 text-sm">1. Paste URL</h3>
+              <p className="text-xs text-gray-600">Analyze your content and messaging</p>
             </div>
 
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mb-4">
-                <Brain className="h-8 w-8 text-purple-600" />
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center mb-3">
+                <Brain className="h-6 w-6 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">2. Get Personas</h3>
-              <p className="text-sm text-gray-600">AI generates detailed customer profiles with pain points, goals, and demographics</p>
+              <h3 className="font-semibold text-gray-900 mb-1 text-sm">2. Get Personas</h3>
+              <p className="text-xs text-gray-600">AI generates customer profiles</p>
             </div>
 
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center mb-4">
-                <FileText className="h-8 w-8 text-green-600" />
+              <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center mb-3">
+                <FileText className="h-6 w-6 text-green-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">3. Export Templates</h3>
-              <p className="text-sm text-gray-600">Download ready-to-use content for emails, LinkedIn, landing pages, and more</p>
+              <h3 className="font-semibold text-gray-900 mb-1 text-sm">3. Export Templates</h3>
+              <p className="text-xs text-gray-600">Download ready-to-use content</p>
             </div>
           </div>
         </div>

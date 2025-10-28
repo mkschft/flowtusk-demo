@@ -32,37 +32,37 @@ export function ProblemSection() {
   ];
 
   return (
-    <section className="py-16 md:py-24 bg-white">
+    <section className="py-12 md:py-16 bg-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           {/* Section Header */}
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-4 leading-tight">
               You&apos;re building for everyone.{" "}
               <span className="text-red-600">That&apos;s why nothing works.</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
               Most B2B companies struggle with the same fundamental problem: they don&apos;t know who they&apos;re really selling to.
             </p>
           </div>
 
           {/* Pain Points Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {painPoints.map((point, index) => {
               const Icon = point.icon;
               return (
                 <Card 
                   key={index}
-                  className="p-6 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-l-4 border-l-red-200 bg-red-50/30"
+                  className="p-4 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-l-4 border-l-red-200 bg-red-50/30"
                 >
-                  <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Icon className="h-6 w-6 text-red-600" />
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <Icon className="h-5 w-5 text-red-600" />
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2">{point.title}</h3>
-                  <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                  <h3 className="font-semibold text-gray-900 mb-2 text-sm">{point.title}</h3>
+                  <p className="text-xs text-gray-600 mb-3 leading-relaxed">
                     {point.description}
                   </p>
-                  <div className="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-medium">
+                  <div className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-medium">
                     → {point.result}
                   </div>
                 </Card>
